@@ -1,10 +1,23 @@
+import os
+from dotenv import load_dotenv
 from sqlalchemy import Column, String, Integer
 from flask_sqlalchemy import SQLAlchemy
-database_name = 'trivia'
-database_user = 'postgres'
-database_password = 'password'
-database_host = 'localhost:5432'
-database_path = f'postgresql://{database_user}:{database_password}@{database_host}/{database_name}'
+
+# Load environment variables from .env file
+load_dotenv()
+
+# Get database configuration from environment variables
+database_user = os.getenv('DATABASE_USER', 'postgres')
+database_password = os.getenv('DATABASE_PASSWORD', 'password')
+database_host = os.getenv('DATABASE_HOST', 'localhost')
+database_port = os.getenv('DATABASE_PORT', '5432')
+database_name = os.getenv('DATABASE_NAME', 'trivia')
+
+# Build database URL from environment variables or use DATABASE_URL if provided
+database_path = os.getenv(
+    'DATABASE_URL',
+    f'postgresql://{database_user}:{database_password}@{database_host}:{database_port}/{database_name}'
+)
 
 db = SQLAlchemy()
 

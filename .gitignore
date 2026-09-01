@@ -15,3 +15,15 @@ env/
 frontend/node_modules/
 
 .env
+
+# Python testing and coverage #
+################################
+.pytest_cache/
+.coverage
+htmlcov/
+*.pyc
+*.pyo
+*.egg-info/
+.tox/
+dist/
+build/
