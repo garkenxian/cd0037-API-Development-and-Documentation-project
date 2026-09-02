@@ -1,6 +1,6 @@
 import React from 'react';
 import ReactDOM from 'react-dom';
-import QuizView from '../src/components/QuizView';
+import QuizView from '../components/QuizView';
 
 describe('QuizView Component', () => {
   // Mock jQuery AJAX calls

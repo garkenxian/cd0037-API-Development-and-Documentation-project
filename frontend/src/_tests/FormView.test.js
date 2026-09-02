@@ -1,6 +1,6 @@
 import React from 'react';
 import ReactDOM from 'react-dom';
-import FormView from '../src/components/FormView';
+import FormView from '../components/FormView';
 
 describe('FormView Component', () => {
   // Mock jQuery AJAX calls

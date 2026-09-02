@@ -1,6 +1,6 @@
 import React from 'react';
 import ReactDOM from 'react-dom';
-import Search from '../src/components/Search';
+import Search from '../components/Search';
 
 describe('Search Component', () => {
   const mockSubmitSearch = jest.fn();
@@ -18,7 +18,7 @@ describe('Search Component', () => {
   it('renders search input field', () => {
     const div = document.createElement('div');
     ReactDOM.render(<Search submitSearch={mockSubmitSearch} />, div);
-    const input = div.querySelector('input[type="text"]');
+    const input = div.querySelector('input:not([type="submit"])');
     expect(input).toBeTruthy();
     expect(input.placeholder).toBe('Search questions...');
     ReactDOM.unmountComponentAtNode(div);

@@ -1,6 +1,6 @@
 import React from 'react';
 import ReactDOM from 'react-dom';
-import Header from '../src/components/Header';
+import Header from '../components/Header';
 
 describe('Header Component', () => {
   it('renders without crashing', () => {

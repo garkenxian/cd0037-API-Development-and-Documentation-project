@@ -1,6 +1,6 @@
 import React from 'react';
 import ReactDOM from 'react-dom';
-import Question from '../src/components/Question';
+import Question from '../components/Question';
 
 describe('Question Component', () => {
   const mockQuestion = {

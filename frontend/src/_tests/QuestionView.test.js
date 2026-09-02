@@ -1,6 +1,6 @@
 import React from 'react';
 import ReactDOM from 'react-dom';
-import QuestionView from '../src/components/QuestionView';
+import QuestionView from '../components/QuestionView';
 
 describe('QuestionView Component', () => {
   // Mock jQuery AJAX calls
@@ -38,8 +38,8 @@ describe('QuestionView Component', () => {
   it('renders without visible questions initially', () => {
     const div = document.createElement('div');
     ReactDOM.render(<QuestionView />, div);
-    // Component should render but won't have questions until AJAX completes
-    expect(div.querySelector('.QuestionView')).toBeTruthy();
+    // Component should render with the question-view class
+    expect(div.querySelector('.question-view')).toBeTruthy();
     ReactDOM.unmountComponentAtNode(div);
   });
 });
