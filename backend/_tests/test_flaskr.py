@@ -1,8 +1,16 @@
 import os
+import sys
 import unittest
+from dotenv import load_dotenv
+
+# Add backend directory to Python path so imports work correctly
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from flaskr import create_app
-from models import db, Question, Category
+from data_access.models import db, Question, Category
+
+# Load environment variables
+load_dotenv()
 
 
 class TriviaTestCase(unittest.TestCase):
@@ -10,11 +18,8 @@ class TriviaTestCase(unittest.TestCase):
 
     def setUp(self):
         """Define test variables and initialize app."""
-        self.database_name = "trivia_test"
-        self.database_user = "postgres"
-        self.database_password = "password"
-        self.database_host = "localhost:5432"
-        self.database_path = f"postgresql://{self.database_user}:{self.database_password}@{self.database_host}/{self.database_name}"
+        # Use SQLite in-memory database for tests (fast, no external dependencies)
+        self.database_path = "sqlite:///:memory:"
 
         # Create app with the test configuration
         self.app = create_app({
@@ -34,10 +39,12 @@ class TriviaTestCase(unittest.TestCase):
             db.session.remove()
             db.drop_all()
 
-    """
-    TODO
-    Write at least one test for each test for successful operation and for expected errors.
-    """
+    def test_app_created(self):
+        """Test that the app is created successfully."""
+        self.assertIsNotNone(self.app)
+        self.assertIsNotNone(self.client)
+
+    # TODO: Write at least one test for each test for successful operation and for expected errors.
 
 
 # Make the tests conveniently executable
