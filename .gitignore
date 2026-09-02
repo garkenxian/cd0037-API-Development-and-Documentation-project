@@ -16,11 +16,18 @@ frontend/node_modules/
 
 .env
 
-# Python testing and coverage #
-################################
+# Testing and coverage #
+#########################
+# Python
 .pytest_cache/
 .coverage
 htmlcov/
+
+# JavaScript/React
+frontend/coverage/
+frontend/.nyc_output/
+
+# General
 *.pyc
 *.pyo
 *.egg-info/
