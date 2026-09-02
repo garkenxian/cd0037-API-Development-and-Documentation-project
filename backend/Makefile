@@ -1,4 +1,4 @@
-.PHONY: help run test test-pytest test-all db-reset db-reset-test db-seed db-refresh db-refresh-test clean install lint format
+.PHONY: help run test test-cov test-all db-init db-seed db-refresh clean install lint format
 
 VENV := venv
 ifeq ($(OS),Windows_NT)
@@ -14,14 +14,11 @@ endif
 help:
 	@echo "Available targets:"
 	@echo "  run              - Run Flask development server"
-	@echo "  test             - Run unittest tests"
-	@echo "  test-pytest      - Run pytest tests with coverage"
-	@echo "  test-all         - Run both test suites"
-	@echo "  db-reset         - Drop and recreate dev database"
-	@echo "  db-reset-test    - Drop and recreate test database"
-	@echo "  db-seed          - Seed database with test data"
-	@echo "  db-refresh       - Reset and seed dev database"
-	@echo "  db-refresh-test  - Reset and seed test database"
+	@echo "  test             - Run all tests (auto-discoverable)"
+	@echo "  test-cov         - Run tests with coverage report"
+	@echo "  db-init          - Initialize database using SQLAlchemy"
+	@echo "  db-seed          - Seed database with sample data"
+	@echo "  db-refresh       - Initialize and seed database"
 	@echo "  clean            - Remove cache files and artifacts"
 	@echo "  install          - Install Python dependencies"
 	@echo "  lint             - Run pylint code checks"
@@ -34,29 +31,20 @@ run:
 	$(PYTHON) -m flask run --reload
 
 test:
-	$(PYTHON) _tests/test_flaskr.py
+	$(PYTHON) -m pytest _tests/ -v
 
-test-pytest:
-	$(PYTHON) -m pytest --cov=flaskr --cov-report=html --cov-report=term
+test-cov:
+	$(PYTHON) -m pytest _tests/ -v --cov=flaskr --cov-report=html --cov-report=term
 
-test-all: test test-pytest
+test-all: test
 
-db-reset:
-	dropdb trivia || true
-	createdb trivia
-	psql trivia < trivia.psql
-
-db-reset-test:
-	dropdb trivia_test || true
-	createdb trivia_test
-	psql trivia_test < trivia.psql
+db-init:
+	$(PYTHON) _helpers/db_init.py
 
 db-seed:
 	$(PYTHON) _helpers/db_seed.py
 
-db-refresh: db-reset db-seed
-
-db-refresh-test: db-reset-test db-seed
+db-refresh: db-init db-seed
 
 clean:
 	find . -type d -name __pycache__ -exec rm -rf {} + || true
@@ -64,7 +52,7 @@ clean:
 	rm -rf .pytest_cache htmlcov .coverage || true
 
 lint:
-	$(PYTHON) -m pylint flaskr/ test_flaskr.py || true
+	$(PYTHON) -m pylint flaskr/ _tests/ _helpers/ || true
 
 format:
-	$(PYTHON) -m black flaskr/ test_flaskr.py tests/ || true
+	$(PYTHON) -m black flaskr/ _tests/ _helpers/

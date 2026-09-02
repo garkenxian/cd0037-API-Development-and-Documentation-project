@@ -1,5 +1,5 @@
 import React from 'react';
-import ReactDOM from 'react-dom';
+import { render } from '@testing-library/react';
 import FormView from '../components/FormView';
 
 describe('FormView Component', () => {
@@ -11,40 +11,30 @@ describe('FormView Component', () => {
   });
 
   it('renders without crashing', () => {
-    const div = document.createElement('div');
-    ReactDOM.render(<FormView />, div);
-    ReactDOM.unmountComponentAtNode(div);
+    render(<FormView />);
   });
 
   it('has a form element', () => {
-    const div = document.createElement('div');
-    ReactDOM.render(<FormView />, div);
-    const form = div.querySelector('form');
+    const { container } = render(<FormView />);
+    const form = container.querySelector('form');
     expect(form).toBeTruthy();
-    ReactDOM.unmountComponentAtNode(div);
   });
 
   it('renders form with correct ID', () => {
-    const div = document.createElement('div');
-    ReactDOM.render(<FormView />, div);
-    const form = div.querySelector('#add-question-form');
+    const { container } = render(<FormView />);
+    const form = container.querySelector('#add-question-form');
     expect(form).toBeTruthy();
-    ReactDOM.unmountComponentAtNode(div);
   });
 
   it('has input fields for question and answer', () => {
-    const div = document.createElement('div');
-    ReactDOM.render(<FormView />, div);
-    const inputs = div.querySelectorAll('input, textarea');
+    const { container } = render(<FormView />);
+    const inputs = container.querySelectorAll('input, textarea');
     expect(inputs.length).toBeGreaterThan(0);
-    ReactDOM.unmountComponentAtNode(div);
   });
 
   it('has a submit button', () => {
-    const div = document.createElement('div');
-    ReactDOM.render(<FormView />, div);
-    const submitButton = div.querySelector('input[type="submit"]');
+    const { container } = render(<FormView />);
+    const submitButton = container.querySelector('input[type="submit"]');
     expect(submitButton).toBeTruthy();
-    ReactDOM.unmountComponentAtNode(div);
   });
 });
