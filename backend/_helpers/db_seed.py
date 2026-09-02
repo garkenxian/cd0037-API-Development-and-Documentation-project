@@ -2,7 +2,7 @@
 Database seeding script for populating initial test data.
 
 This script adds sample questions and categories to the trivia database.
-Run after creating/resetting the database: python db_seed.py
+Run after creating/resetting the database: python _helpers/db_seed.py
 """
 
 import os
@@ -13,10 +13,10 @@ from dotenv import load_dotenv
 load_dotenv()
 
 # Add parent directory to path to import from flaskr
-sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from flaskr import create_app
-from models import db, Question, Category
+from data_access.models import db, Question, Category
 
 # Sample data
 CATEGORIES = [

@@ -34,7 +34,7 @@ run:
 	$(PYTHON) -m flask run --reload
 
 test:
-	$(PYTHON) test_flaskr.py
+	$(PYTHON) _tests/test_flaskr.py
 
 test-pytest:
 	$(PYTHON) -m pytest --cov=flaskr --cov-report=html --cov-report=term
