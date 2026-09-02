@@ -7,7 +7,7 @@ on:
     branches: [main, develop]
 
 jobs:
-  test:
+  backend-tests:
     runs-on: ubuntu-latest
     
     strategy:
@@ -43,5 +43,35 @@ jobs:
       uses: codecov/codecov-action@v3
       with:
         files: ./backend/coverage.xml
+        flags: backend
+        fail_ci_if_error: false
+      continue-on-error: true
+
+  frontend-tests:
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Set up Node.js
+      uses: actions/setup-node@v3
+      with:
+        node-version: '16'
+    
+    - name: Install dependencies
+      working-directory: ./frontend
+      run: npm install
+    
+    - name: Run tests with coverage
+      working-directory: ./frontend
+      run: npm test -- --coverage --watchAll=false
+      env:
+        CI: true
+    
+    - name: Upload coverage to Codecov
+      uses: codecov/codecov-action@v3
+      with:
+        files: ./frontend/coverage/lcov.info
+        flags: frontend
         fail_ci_if_error: false
       continue-on-error: true
