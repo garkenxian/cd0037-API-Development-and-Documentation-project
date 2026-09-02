@@ -7,7 +7,7 @@ from dotenv import load_dotenv
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from flaskr import create_app
-from data_access.models import db, Question, Category
+from data_access import db, Question, Category
 
 # Load environment variables
 load_dotenv()

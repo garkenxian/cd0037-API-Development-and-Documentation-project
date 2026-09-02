@@ -16,7 +16,7 @@ load_dotenv()
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from flaskr import create_app
-from data_access.models import db, Question, Category
+from data_access import db, Question, Category, User, GameSession
 
 # Sample data
 CATEGORIES = [
@@ -103,6 +103,55 @@ QUESTIONS = [
     },
 ]
 
+# Test users for demo/testing
+USERS = [
+    {
+        'username': 'alice_wonder',
+        'email': 'alice@example.com'
+    },
+    {
+        'username': 'bob_builder',
+        'email': 'bob@example.com'
+    },
+    {
+        'username': 'charlie_brown',
+        'email': 'charlie@example.com'
+    },
+    {
+        'username': 'diana_prince',
+        'email': 'diana@example.com'
+    },
+]
+
+# Test game sessions (will reference created users and categories)
+GAME_SESSIONS_DATA = [
+    {
+        'username': 'alice_wonder',
+        'category': 'Science',
+        'score': 95
+    },
+    {
+        'username': 'alice_wonder',
+        'category': 'History',
+        'score': 87
+    },
+    {
+        'username': 'bob_builder',
+        'category': 'Art',
+        'score': 78
+    },
+    {
+        'username': 'charlie_brown',
+        'category': 'Geography',
+        'score': 92
+    },
+    {
+        'username': 'diana_prince',
+        'category': None,  # General quiz
+        'score': 88
+    },
+]
+
 
 def seed_database():
     """Seed the database with initial data."""
@@ -134,10 +183,16 @@ def seed_database():
                 question=q_data['question']
             ).first()
             if not existing:
+                # Look up category ID by name
+                category_obj = Category.query.filter_by(type=q_data['category']).first()
+                if not category_obj:
+                    print(f"  Warning: Category '{q_data['category']}' not found, skipping question...")
+                    continue
+                
                 question = Question(
                     question=q_data['question'],
                     answer=q_data['answer'],
-                    category=q_data['category'],
+                    category=category_obj.id,
                     difficulty=q_data['difficulty']
                 )
                 db.session.add(question)
@@ -147,6 +202,58 @@ def seed_database():
         
         db.session.commit()
         print(f"✓ Added {added_count} questions")
+        
+        # Add test users
+        print("Adding test users...")
+        added_users = 0
+        for user_data in USERS:
+            existing = User.query.filter_by(username=user_data['username']).first()
+            if not existing:
+                user = User(
+                    username=user_data['username'],
+                    email=user_data['email']
+                )
+                db.session.add(user)
+                added_users += 1
+            else:
+                print(f"  User '{user_data['username']}' already exists, skipping...")
+        
+        db.session.commit()
+        print(f"✓ Added {added_users} test users")
+        
+        # Add game sessions
+        print("Adding game sessions...")
+        added_sessions = 0
+        for session_data in GAME_SESSIONS_DATA:
+            # Look up user by username
+            user = User.query.filter_by(username=session_data['username']).first()
+            if not user:
+                print(f"  Warning: User '{session_data['username']}' not found, skipping game session...")
+                continue
+            
+            # Look up category if specified
+            category_id = None
+            if session_data['category']:
+                category_obj = Category.query.filter_by(type=session_data['category']).first()
+                if category_obj:
+                    category_id = category_obj.id
+                else:
+                    print(f"  Warning: Category '{session_data['category']}' not found, creating session without category...")
+            
+            game_session = GameSession(
+                user_id=user.id,
+                score=session_data['score'],
+                category_id=category_id
+            )
+            db.session.add(game_session)
+            
+            # Update user stats
+            user.games_played += 1
+            user.total_score += session_data['score']
+            added_sessions += 1
+        
+        db.session.commit()
+        print(f"✓ Added {added_sessions} game sessions")
         
         print("\n✓ Database seeding completed successfully!")
 
