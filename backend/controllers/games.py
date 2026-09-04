@@ -45,27 +45,29 @@ def create_game():
     try:
         # Validate user exists
         UserService.get_user(user_id)
-        
+
+        # Normalize category_id: 0 means "all categories" (store as NULL in DB)
+        normalized_category_id = None if category_id in (None, 0) else category_id
+
         # Validate category exists (if provided)
-        # category_id of 0 or None means "all categories"
-        if category_id is not None and category_id != 0:
-            CategoryService.get_category(category_id)
-        
+        if normalized_category_id is not None:
+            CategoryService.get_category(normalized_category_id)
+
         # Validate number_of_questions
         if not isinstance(number_of_questions, int) or number_of_questions < 1 or number_of_questions > 20:
             raise ValueError("number_of_questions must be between 1 and 20")
-        
+
         # Create game session with initial score 0
         game_session = GameSessionService.create_game_session(
             user_id=user_id,
             score=0,
-            category_id=category_id
+            category_id=normalized_category_id
         )
-        
+
         # Get first question - use random selection for variety
-        if category_id is not None:
+        if normalized_category_id is not None:
             # Get random question from category
-            first_question = QuestionService.get_random_question_by_category(category_id)
+            first_question = QuestionService.get_random_question_by_category(normalized_category_id)
         else:
             # Get random question from any category
             # For simplicity, get first available question (in production, would be random)
