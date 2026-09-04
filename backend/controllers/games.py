@@ -189,7 +189,7 @@ def answer_question(game_session_id, question_number):
     Answer a question in an active game session
     
     CRITICAL: This endpoint requires Phase 1b (game_session_answer audit table) to work correctly.
-    Without Phase 1b, scoring is nondeterministic (answers validated against random questions).
+    If Phase 1b is unavailable, this endpoint returns 501 (Not Implemented) to avoid nondeterministic scoring.
     
     Request body: {"user_answer": string}
     Returns: answer feedback with score update
