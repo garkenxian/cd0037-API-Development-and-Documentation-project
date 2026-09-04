@@ -363,9 +363,9 @@ function App() {
   const [showUserSelector, setShowUserSelector] = useState(true);
   
   if (!currentUser) {
-    return <UserSelector onUserSelect={(userId) => {
-      // Fetch user details here or just store ID
-      setCurrentUser(userId);
+    return <UserSelector onUserSelect={(user) => {
+      // Store the full user object (or fetch it before setting state)
+      setCurrentUser(user);
       setShowUserSelector(false);
     }} />;
   }
