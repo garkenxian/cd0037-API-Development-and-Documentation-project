@@ -283,9 +283,9 @@ UI calculates percentage (3/5 = 60%) from this data, giving frontend flexibility
 - 🆕 `PUT /categories/<int:id>` - Update category
 - 🆕 `DELETE /categories/<int:id>` - Delete category
 
-- 🆕 `GET /quizzes` (redesigned - no answer returned)
-- 🆕 `POST /quiz-answer` (NEW - server validates answer)
-- 🆕 `POST /game-sessions` (NEW - persist final score)
+- 🆕 `POST /quizzes` - Create quiz session (returns first question, no answer)
+- 🆕 `GET /quizzes/<int:quiz_session_id>` - Get current quiz state (catch-up)
+- 🆕 `POST /quizzes/<int:quiz_session_id>/<int:question_number>` - Answer question, return next
 
 - 🆕 `GET /users` - List all users
 - 🆕 `GET /users/<int:id>` - Get user details + history
