@@ -23,6 +23,20 @@ class GameSession(db.Model):
         self.score = score
         self.category_id = category_id
 
+    def insert(self):
+        """Insert this game session into the database"""
+        db.session.add(self)
+        db.session.commit()
+
+    def update(self):
+        """Update this game session in the database"""
+        db.session.commit()
+
+    def delete(self):
+        """Delete this game session from the database"""
+        db.session.delete(self)
+        db.session.commit()
+
     def format(self):
         """Return formatted game session as dictionary"""
         return {

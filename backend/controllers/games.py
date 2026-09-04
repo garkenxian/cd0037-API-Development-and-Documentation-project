@@ -37,7 +37,8 @@ def create_game():
         UserService.get_user(user_id)
         
         # Validate category exists (if provided)
-        if category_id is not None:
+        # category_id of 0 or None means "all categories"
+        if category_id is not None and category_id != 0:
             CategoryService.get_category(category_id)
         
         # Validate number_of_questions
@@ -58,10 +59,10 @@ def create_game():
         else:
             # Get random question from any category
             # For simplicity, get first available question (in production, would be random)
-            questions = QuestionService.get_all_questions()
-            if not questions:
+            questions_page = QuestionService.get_all_questions()
+            if not questions_page.items:
                 raise ValueError("No questions available")
-            first_question = questions[0]
+            first_question = questions_page.items[0]
         
         if not first_question:
             raise ValueError("No questions available for this category")
@@ -133,13 +134,36 @@ def answer_question(game_session_id, question_number):
     try:
         game_session = GameSessionService.get_game_session(game_session_id)
         
-        # For now, return a placeholder response
-        # In a full implementation, validate the answer, update score, and return next question
+        # For this implementation, we'll use a simple answer validation
+        # In a full implementation, this would track which question is being answered
+        # using a separate game_session_answer table and validate sequentially
+        
+        # Get a question to validate the answer against
+        if game_session.category_id and game_session.category_id != 0:
+            question = QuestionService.get_random_question_by_category(game_session.category_id)
+        else:
+            questions_page = QuestionService.get_all_questions()
+            question = questions_page.items[0] if questions_page.items else None
+        
+        if not question:
+            return jsonify({
+                'success': False,
+                'error': 'No questions available'
+            }), 400
+        
+        # Check if user_answer is correct (case-insensitive, trimmed)
+        is_correct = user_answer.lower().strip() == question.answer.lower().strip()
+        
+        # Update game session score if correct
+        if is_correct:
+            game_session.score += 10  # Award 10 points per correct answer
+            game_session.update()
+        
         return jsonify({
             'game_session_id': game_session.id,
             'question_number': question_number,
-            'correct': False,
-            'correct_answer': 'Answer placeholder',
+            'correct': is_correct,
+            'correct_answer': question.answer,
             'current_score': {
                 'correct': game_session.score,
                 'total_answered': question_number,

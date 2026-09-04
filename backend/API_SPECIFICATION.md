@@ -408,7 +408,7 @@ Complete REST API specification for Trivia Quiz Application with 16 total endpoi
     "total_answered": 5,
     "total_questions": 5
   },
-  "message": "Quiz completed",
+  "message": "Game completed",
   "success": true
 }
 ```
@@ -416,7 +416,7 @@ Complete REST API specification for Trivia Quiz Application with 16 total endpoi
 **Use Cases:**
 - User lost connection, needs to catch up
 - Frontend refresh, needs current state
-- Check quiz completion status
+- Check game completion status
 
 **Errors:**
 - 404: Game session not found
@@ -932,46 +932,72 @@ Complete REST API specification for Trivia Quiz Application with 16 total endpoi
 - `questions`: id, question, answer, category_id (FK), difficulty, rating
 - `users`: id, username, email, total_score, games_played, created_at
 
-**New Tables for Quiz Sessions:**
+**Phase 1 Tables (Current):**
 
-### quiz_session
-Tracks overall quiz session information
+### game_sessions
+Tracks overall game session information
 ```
 - id (PK)
 - user_id (FK → users)
-- category_id (FK → categories)
-- number_of_questions (integer)
-- status (enum: 'in_progress', 'completed', 'abandoned')
-- created_at (timestamp)
-- completed_at (timestamp, nullable)
+- category_id (FK → categories, nullable - NULL means all categories)
+- score (integer) - points earned in this game
+- date_played (timestamp) - when the game was played
 ```
 
-### quiz_session_answer
-Audit trail - each question answered in a game
+**Phase 1b Tables (CRITICAL PREREQUISITE):**
+
+### game_session_answer (REQUIRED for game endpoints to function)
+Audit trail - each question answered in a game. **This table is essential** for:
+- Preventing duplicate questions in same session
+- Finding next unanswered question
+- Validating sequential answering
+- Enabling catch-up after connection loss
+
 ```
 - id (PK)
-- game_session_id (FK → game_sessions)
-- question_number (integer) - which question in sequence (1-5, etc)
-- question_id (FK → questions)
-- question_text (text) - snapshot of question at time of game (if deleted later, history preserved)
-- user_answer (text)
-- correct_answer (text)
-- is_correct (boolean)
-- answered_at (timestamp)
+- game_session_id (FK → game_sessions) - which game this answer belongs to
+- question_number (integer) - sequence position in game (1, 2, 3, 4, 5...)
+- question_id (FK → questions) - which question was asked
+- question_text (text) - snapshot of question at time (immutable, for history preservation)
+- user_answer (text) - what user submitted
+- correct_answer (text) - the correct answer (from question at time of game)
+- is_correct (boolean) - true if user_answer matches correct_answer
+- answered_at (timestamp) - when user submitted answer
 ```
+
+**Unique Constraint:**
+- (game_session_id, question_number) - Prevent answering same question_number twice in same game
 
 **Relationships:**
 - game_sessions.user_id → users.id
 - game_sessions.category_id → categories.id (can be NULL for all categories)
-- game_session_answer.game_session_id → game_sessions.id
-- game_session_answer.question_id → questions.id
+- game_session_answer.game_session_id → game_sessions.id (CASCADE DELETE)
+- game_session_answer.question_id → questions.id (RESTRICT - preserve history)
 
-**Why This Design:**
-- ✅ Persistent audit trail (user can replay quiz)
-- ✅ Question snapshots (deleted questions don't break quiz history)
-- ✅ Complete answer tracking (for analytics, re-review)
-- ✅ Session recovery (GET /games/id catches user up)
-- ✅ No duplicate answers (can't re-answer same question)
+**Phase 1 (Current) - Core Implementation:**
+- ✅ Game session tracking (id, user_id, score, category_id, date_played)
+- ✅ Score persistence (updated by answer endpoint)
+- ✅ User statistics (total_score, games_played auto-updated in users table)
+- ✅ Category tracking (NULL = all categories, otherwise specific category)
+
+**Phase 1b (CRITICAL PREREQUISITE - Must complete before Phase 2 game endpoints) :**
+- ⏳ Audit trail (game_session_answer table) - **REQUIRED for question deduplication and catch-up**
+- ⏳ Question snapshots (deleted questions don't break quiz history)
+- ⏳ Question tracking (prevents answering same question twice in same game)
+- ⏳ Complete answer tracking (for analytics, validation, re-review)
+
+**Why Phase 1b is Required:**
+The game_session table alone cannot track which questions have been answered. Without `game_session_answer`:
+- No way to prevent duplicate questions in same session
+- No way to find "next unanswered question" for `GET /games/:id`
+- No way to validate sequential answering in `POST /games/:id/:question_number`
+- No persistent audit trail for incomplete/abandoned games
+
+**Future Enhancements (v3+):**
+- Status tracking (in_progress, completed, abandoned) - requires v2 data migration
+- Admin replay/analytics dashboard
+- Question difficulty weighting
+- User performance analytics
 
 ---
 

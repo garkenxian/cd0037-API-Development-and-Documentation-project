@@ -144,27 +144,160 @@ Each endpoint is implemented in sequence with full end-to-end testing:
 8. Verify quiz_session exists in DB
 ```
 
-**Dependencies:** POST /users, POST /categories (need data to exist)
+**Dependencies:** POST /users (item 1), POST /categories (item 2), POST /questions (item 3)
 **Estimated complexity:** Medium-Hard
-**Why fourth:** Foundation for quiz flow
+**Why fourth:** Foundation for quiz flow - creates game session but doesn't answer questions yet
 
 ---
 
-## 5️⃣ POST /quizzes/:id/:num - Answer Question
+### PHASE 1B: CRITICAL PREREQUISITE - Game Session Answer Audit Table
+
+## Phase 1b️⃣ Create GameSessionAnswer Model & CRUD Operations
 
 **Backend Work:**
-- Endpoint: `POST /quizzes/<quiz_session_id>/<question_number>`
-- Request: `{user_answer: "water"}`
-- Response: `{correct: true/false, correct_answer: "H2O", current_score: {...}, question_number: 2, question: {...next question or null}}`
+- Endpoint: `GET /games/<game_session_id>`
+- Request: None
+- Response (in-progress): `{game_session_id, question_number: 3, current_score: {...}, question: {...}}`
+- Response (completed): `{game_session_id, status: \"completed\", current_score: {...}, final_score: 40, message: \"Game completed\"}`
 - Database: 
-  - Validate quiz_session exists and not completed
-  - Validate question_number matches expected sequence
-  - Validate question not already answered (prevent re-answers)
-  - Insert record into quiz_session_answer table
-  - If final question: Mark quiz_session as completed, update User.total_score + User.games_played
-- Validation: Answer matching logic (lowercase, special chars, substring)
-- Error codes: 400 (missing answer), 404 (quiz/question), 422 (already answered, out of sequence, completed)
-- Tests: Correct answer, incorrect answer, re-answer error, out-of-sequence error, quiz completion
+  - Fetch game_session
+  - Query game_session_answer table for all answered questions
+  - Calculate next_question_number = max_answered + 1
+  - If next_question_number > total_questions: Game is completed
+  - If in-progress: Select next question (avoiding already-answered question IDs)
+- Validation: Check game_session exists
+- Error codes: 404 (game not found)
+- Tests: In-progress state, completed state, catch-up after multiple answers
+
+**Use Case (Connection Recovery):**
+```
+1. User was answering game 42, answered questions 1-3
+2. Browser crashes / connection lost
+3. User refreshes app
+4. Frontend calls GET /games/42 (instead of recreating game)
+5. Backend queries: answered_question_ids = [7, 15, 22]
+6. Backend calculates: next = 4, total_answered = 3, total_questions = 5
+7. Backend returns: {question_number: 4, question: {...new_question}, current_score: {correct: 2, total_answered: 3, ...}}
+8. User continues from where they left off
+9. No progress lost, quiz session preserved
+```
+
+**Dependencies:** Phase 1b (needs game_session_answer to determine next question)
+**Estimated complexity:** Medium
+**Why sixth:** Enables catch-up/recovery feature
+
+---
+
+### PHASE 1B: CRITICAL PREREQUISITE - Game Session Answer Audit Table
+
+## Phase 1b️⃣ Create GameSessionAnswer Model & CRUD Operations
+
+**Why This Phase Exists:**
+The answer question endpoint (POST /games/:id/:question_number) requires the `game_session_answer` table to:
+1. **Prevent duplicate questions** - Track which questions have been answered in this game
+2. **Find next question** - Query which questions haven't been answered yet
+3. **Validate sequence** - Ensure user answers questions in order (1, 2, 3, 4, 5)
+4. **Enable catch-up** - GET /games/:id must return next *unanswered* question for connection recovery
+5. **Prevent re-answers** - Stop user from answering same question_number twice
+
+Without this table, the answer validation endpoint cannot function correctly.
+
+**Backend Work:**
+- Create Model: `GameSessionAnswer` in `backend/models/game_session_answer.py`
+  - Fields: id (PK), game_session_id (FK), question_number, question_id (FK), question_text (snapshot), user_answer, correct_answer, is_correct, answered_at
+  - Unique constraint: (game_session_id, question_number)
+  - Relationships: GameSession (many-to-one), Question (many-to-one)
+  
+- Create Repository: `GameSessionAnswerRepository` in `backend/data_access/game_session_answer_repository.py`
+  - `create(game_session_id, question_number, question_id, question_text, user_answer, correct_answer, is_correct)` - Insert new answer record
+  - `get_by_id(id)` - Get single record
+  - `get_by_game_session(game_session_id)` - Get all answers for a game
+  - `get_by_game_and_question_number(game_session_id, question_number)` - Check if already answered
+  - `get_answered_question_ids(game_session_id)` - Get list of question IDs already answered in this game
+  - `get_max_question_number(game_session_id)` - Find highest question_number answered
+  - `delete_by_game_session(game_session_id)` - Delete all answers for a game (CASCADE)
+
+- Create Service: `GameSessionAnswerService` in `backend/services/game_session_answer_service.py`
+  - `record_answer(game_session_id, question_number, question, user_answer)` - Record user's answer
+    - Validates: game_session exists, question_number not yet answered
+    - Calculates: is_correct (case-insensitive, trimmed comparison)
+    - Creates: snapshot of question_text, stores correct_answer
+    - Returns: answer record with is_correct flag
+  - `get_answered_questions(game_session_id)` - Get all answered question IDs
+  - `has_answered(game_session_id, question_number)` - Check if already answered
+  - `get_next_question_number(game_session_id)` - Calculate next expected question_number
+
+**Database Schema:**
+```sql
+CREATE TABLE game_session_answer (
+  id INTEGER PRIMARY KEY,
+  game_session_id INTEGER NOT NULL REFERENCES game_sessions(id) ON DELETE CASCADE,
+  question_number INTEGER NOT NULL,
+  question_id INTEGER NOT NULL REFERENCES questions(id),
+  question_text TEXT NOT NULL,
+  user_answer TEXT NOT NULL,
+  correct_answer TEXT NOT NULL,
+  is_correct BOOLEAN NOT NULL,
+  answered_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  UNIQUE(game_session_id, question_number)
+)
+```
+
+**Tests:**
+- Test record_answer: Create game, record answer, verify record exists
+- Test has_answered: Verify can detect already-answered question
+- Test get_answered_questions: Get list of answered question IDs
+- Test get_next_question_number: Verify next expected number calculation
+- Test duplicate prevention: Try answering question_number 1 twice → 422 error
+- Test out-of-sequence: Try answering question 3 before 1 and 2 → 422 error
+- Test answer validation: Compare user vs correct answer (case-insensitive)
+- Test cascade delete: Delete game_session → all answer records deleted
+
+**Integration Test:**
+```
+1. Create game_session (id: 42, user: 1, category: 1, questions: 5)
+2. POST /games/42/1 {user_answer: "Water"}
+   - Backend queries: has_answered(42, 1) → false
+   - Backend calculates: is_correct = ("water" == "H2O") → true (if comparison logic matches)
+   - Backend creates: game_session_answer record
+   - Database contains: (id: 1, game_session_id: 42, question_number: 1, question_id: 7, is_correct: true)
+3. POST /games/42/1 {user_answer: "Something"} → 422 error "Question 1 already answered"
+4. POST /games/42/3 {user_answer: "..."}  → 422 error "Expected question 2, got 3"
+5. GET /games/42 (after answering 1)
+   - Backend queries: get_answered_questions(42) → [7]
+   - Backend calculates: next_question_number = 2
+   - Backend selects question avoiding ID 7
+   - Returns: {question_number: 2, question: {...new_question}, ...}
+```
+
+**Dependencies:** 
+- GameSession table (Phase 1, item 4) must exist
+- Question table (Phase 1, item 3) must exist
+
+**Estimated complexity:** Medium
+**Why Phase 1b:** CRITICAL prerequisite for answer question endpoint (item 5)
+
+---
+
+## 5️⃣ POST /games/:id/:question_number - Answer Question [UPDATED]
+
+**Backend Work:**
+- Endpoint: `POST /games/<game_session_id>/<question_number>`
+- Request: `{user_answer: "water"}`
+- Response: `{correct: true/false, correct_answer: \"H2O\", current_score: {...}, question_number: 2, question: {...next question or null}}`
+- Database Operations (WITH game_session_answer audit table):
+  - **Validate:** game_session exists and score is current
+  - **Validate:** question_number matches expected sequence (max_answered + 1)
+  - **Validate:** this question_number hasn't been answered yet (prevent re-answers)
+  - **Get Question:** Fetch the question being answered
+  - **Compare:** user_answer vs question.answer (case-insensitive, trimmed)
+  - **Record:** Insert into game_session_answer table (question_number, question_id, question_text snapshot, user_answer, correct_answer, is_correct)
+  - **Update Score:** Increment game_session.score if is_correct
+  - **Get Next:** Query game_session_answer for next unanswered question
+  - **Auto-Complete:** If question_number == total_questions, mark game complete and update User stats
+- Validation: Answer matching logic (lowercase, trimmed)
+- Error codes: 400 (missing answer), 404 (game/question), 422 (already answered, out of sequence, completed)
+- Tests: Correct answer, incorrect answer, re-answer error (422), out-of-sequence error (422), quiz completion, final score calculation
 
 **Frontend Work:**
 - Component: QuizView.js (continue rewrite)
@@ -175,28 +308,43 @@ Each endpoint is implemented in sequence with full end-to-end testing:
 
 **Integration Test:**
 ```
-1. Quiz session 42 started, question 1 displayed
-2. User enters answer "water"
-3. Frontend POSTs /games/42/1 {user_answer: "water"}
-4. Backend validates: quiz_session 42 exists, question 1 not answered yet
-5. Backend fetches question, normalizes both answers, validates match
-6. Backend creates quiz_session_answer record (session_id: 42, question_number: 1, is_correct: true)
-7. Backend calculates score (correct: 1, total_answered: 1, total_questions: 5)
-8. Backend randomly selects next science question (id: 15)
-9. Backend returns {correct: true, correct_answer: "H2O", current_score: {correct: 1, ...}, question: {id: 15, question: "Capital of France?", ...}}
-10. Frontend displays feedback "Correct! The answer is H2O"
-11. Frontend displays next question with updated score
+1. Game session 42 started (user_id: 1, category_id: 1, questions: 5)
+2. User answers question 1: \"water\"
+3. Frontend POSTs /games/42/1 {user_answer: \"water\"}
+4. Backend validates: 
+   - game_session 42 exists ✓
+   - question_number 1 is expected (max_answered in game_session_answer = 0) ✓
+   - question 1 not yet answered (has_answered(42, 1) = false) ✓
+5. Backend fetches question, snapshots question_text
+6. Backend compares: \"water\".lower().strip() == \"H2O\".lower().strip() → false (hypothetical mismatch)
+7. Backend records: INSERT INTO game_session_answer (game_session_id: 42, question_number: 1, question_id: 7, is_correct: false, user_answer: \"water\", correct_answer: \"H2O\")
+8. Backend keeps game_session.score unchanged (was 0, still 0)
+9. Backend queries: answered_question_ids = [7], next available = first question where id NOT IN [7]
+10. Backend returns: {correct: false, correct_answer: \"H2O\", current_score: {correct: 0, total_answered: 1, total_questions: 5}, question_number: 2, question: {...}}
+11. Frontend displays feedback \"Incorrect. The answer is H2O\"
 
-12. [Loop: User answers questions 2, 3, 4]
+12. User answers question 2: \"Paris\" (correct)
+13. Frontend POSTs /games/42/2
+14. Backend validates: question_number 2 is expected (max_answered = 1) ✓
+15. Backend records: is_correct = true
+16. Backend updates: game_session.score += 10 (now 10)
+17. Backend queries: answered_question_ids = [7, 15], selects next question
+18. Backend returns: {correct: true, ..., current_score: {correct: 1, total_answered: 2, ...}, question_number: 3, question: {...}}
 
-13. User answers final question 5
-14. Backend marks quiz_session as completed
-15. Backend updates User: total_score = 0 + 4 = 4, games_played = 0 + 1 = 1
-16. Backend returns {correct: true, ..., question: null, quiz_status: "completed"}
-17. Frontend displays final score screen "You got 4/5 (80%)"
-18. Verify quiz_session.status = "completed" in DB
-19. Verify User.total_score = 4 in DB
-20. Verify User.games_played = 1 in DB
+19. [User answers questions 3, 4, getting 3, 5 correct]
+
+20. User answers question 5 (final): \"Tokyo\" (correct)
+21. Frontend POSTs /games/42/5
+22. Backend records answer
+23. Backend checks: question_number (5) == total_questions (5) → AUTO-COMPLETE
+24. Backend marks: game_session.score = 40 (4 correct * 10 points)
+25. Backend updates User: total_score = 0 + 40 = 40, games_played = 0 + 1 = 1
+26. Backend returns: {correct: true, ..., question: null, quiz_status: \"completed\", final_score: 40}
+27. Frontend displays completion screen \"You got 4/5 (80%)!\"
+28. Verify DB state:
+    - game_session 42: score = 40
+    - game_session_answer: 5 records (question_numbers 1-5)
+    - User 1: total_score = 40, games_played = 1
 ```
 
 **Dependencies:** POST /games (need active session)
@@ -205,11 +353,60 @@ Each endpoint is implemented in sequence with full end-to-end testing:
 
 ---
 
+## 6️⃣ GET /games/:id - Get Game State & Next Question [UPDATED]
+
+**Backend Work (NEW - REQUIRES Phase 1b):**
+- Endpoint: `GET /games/<game_session_id>`
+- Request: None
+- Response (in-progress): `{game_session_id, question_number: 3, current_score: {...}, question: {...}}`
+- Response (completed): `{game_session_id, status: "completed", current_score: {...}, final_score: 40, message: "Game completed"}`
+- Database: 
+  - Fetch game_session
+  - Query game_session_answer table for all answered questions and max question_number
+  - Calculate next_question_number = max_answered + 1
+  - If next_question_number > total_questions: Game is completed
+  - If in-progress: Select next question excluding already-answered question IDs
+- Validation: Check game_session exists
+- Error codes: 404 (game not found)
+- Tests: In-progress state, completed state, catch-up after multiple answers
+
+**Critical Use Case (Connection Recovery):**
+User was answering game 42, answered questions 1-3 successfully, then lost connection.
+```
+1. User refreshes browser
+2. Frontend calls GET /games/42 (instead of recreating game)
+3. Backend queries game_session_answer: answered_question_ids = [7, 15, 22]
+4. Backend calculates: next = 4, total_answered = 3, total_questions = 5
+5. Backend selects a new question NOT in [7, 15, 22]
+6. Backend returns: {game_session_id: 42, question_number: 4, question: {...new_question}, current_score: {correct: 2, total_answered: 3, ...}}
+7. User continues from question 4 - no progress lost!
+8. Quiz session preserved, all previous answers retained in game_session_answer audit table
+```
+
+**Integration Test:**
+```
+1. User has answered questions 1-2 in game 42
+2. Connection lost before question 3
+3. Frontend: GET /games/42
+4. Backend queries: game_session_answer has 2 records for game 42
+5. Backend calculates: max_question_number = 2, next = 3
+6. Backend queries: answered_question_ids = [7, 15]
+7. Backend selects: first available question NOT in [7, 15]
+8. Backend returns: {question_number: 3, question: {...}, current_score: {...}}
+9. User resumes quiz from question 3
+```
+
+**Dependencies:** Phase 1b (GameSessionAnswer table required to find answered questions)
+**Estimated complexity:** Medium
+**Why sixth:** Enables catch-up/recovery feature (requires audit table infrastructure)
+
+---
+
 ### PHASE 2: DELETE OPERATIONS (DELETE)
 
 ---
 
-## 6️⃣ DELETE /questions/:id - Delete Question
+## 7️⃣ DELETE /questions/:id - Delete Question
 
 **Backend Work:**
 - Endpoint: `DELETE /questions/<question_id>`
@@ -239,11 +436,11 @@ Each endpoint is implemented in sequence with full end-to-end testing:
 
 **Dependencies:** POST /questions (need questions to delete)
 **Estimated complexity:** Easy
-**Why sixth:** Existing endpoint, verify still works with new DB
+**Why seventh:** Existing endpoint, verify still works with new DB
 
 ---
 
-## 7️⃣ DELETE /categories/:id - Delete Category (with force cascade)
+## 8️⃣ DELETE /categories/:id - Delete Category (with force cascade)
 
 **Backend Work:**
 - Endpoint: `DELETE /categories/<category_id>?force=false`
@@ -285,7 +482,7 @@ Each endpoint is implemented in sequence with full end-to-end testing:
 
 **Dependencies:** POST /categories, POST /questions (need data to test)
 **Estimated complexity:** Medium
-**Why seventh:** Cleanup operation, builds on previous endpoints
+**Why eighth:** Cleanup operation, builds on previous endpoints
 
 ---
 
@@ -293,7 +490,7 @@ Each endpoint is implemented in sequence with full end-to-end testing:
 
 ---
 
-## 8️⃣ GET /categories - List All Categories
+## 9️⃣ GET /categories - List All Categories
 
 **Backend Work:**
 - Endpoint: `GET /categories`
@@ -323,7 +520,7 @@ Each endpoint is implemented in sequence with full end-to-end testing:
 
 ---
 
-## 9️⃣ GET /categories/:id - Get Single Category
+## 🔟 GET /categories/:id - Get Single Category
 
 **Backend Work:**
 - Endpoint: `GET /categories/<category_id>`
@@ -424,10 +621,10 @@ Each endpoint is implemented in sequence with full end-to-end testing:
 
 ---
 
-## 1️⃣2️⃣ GET /quizzes/:id - Get Quiz State (Catch-Up Endpoint)
+## 1️⃣2️⃣ GET /games/:id - Get Game State (Catch-Up Endpoint)
 
 **Backend Work:**
-- Endpoint: `GET /quizzes/<quiz_session_id>`
+- Endpoint: `GET /games/<game_session_id>`
 - Request: None
 - Response (in progress): `{game_session_id, question_number, current_score: {...}, question: {...}, success: true}`
 - Response (completed): `{game_session_id, status: "completed", current_score: {...}, success: true}`

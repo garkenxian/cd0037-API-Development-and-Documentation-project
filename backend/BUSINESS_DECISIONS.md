@@ -121,14 +121,51 @@ When user answers final question (question_number = total_questions):
 1. **game_sessions**: Tracks game sessions
    - id, user_id, category_id, number_of_questions, status, created_at, completed_at
 
-2. **game_session_answer**: Audit trail - each answer in a game
+2. **game_session_answer**: Audit trail - each answer in a game (CRITICAL - Phase 1b)
    - id, game_session_id, question_number, question_id, question_text (snapshot), user_answer, correct_answer, is_correct, answered_at
+
+**Critical Architectural Dependency:**
+The `game_session_answer` table is **NOT optional** — it is required for the game endpoints to function correctly:
+
+- **Question Deduplication**: When `POST /games/:id/:question_number` is called, the endpoint must check `game_session_answer` to see which questions have already been answered in this session. Without this, the same question can be asked twice.
+
+- **Question Tracking**: The game session doesn't store which questions were assigned. Only `game_session_answer` records which questions were asked and answered. This is the source of truth.
+
+- **Next Question Logic**: When returning the next question, the endpoint queries `game_session_answer` to exclude already-answered questions. Without this table, there's no way to prevent duplicates.
+
+- **Catch-Up Capability**: `GET /games/:id` must return the next *unanswered* question. This requires querying `game_session_answer` to find which questions have been answered.
+
+- **Validation**: The endpoint must validate that `question_number` matches the expected sequence (e.g., if 2 questions answered, next must be 3). This data exists only in `game_session_answer`.
+
+**CRUD Operations Required:**
+
+1. **CREATE (POST /games/:id/:question_number)**
+   - When user answers a question, insert a new record into `game_session_answer`
+   - Stores: question_number, question_id, question_text (snapshot), user_answer, correct_answer, is_correct, answered_at
+
+2. **READ (GET /games/:id for next question)**
+   - Query `game_session_answer` to find max(question_number) already answered
+   - Exclude question_ids that have been answered in this session
+   - Return next question with question_number = max + 1
+
+3. **READ (Validation)**
+   - Before accepting an answer, check if this question_number was already answered (prevent re-answers)
+   - Check if user is answering in sequence (expected question_number matches)
+
+4. **UPDATE (Not typically needed)**
+   - Could update if allowing answer revisions, but current design is append-only
+
+5. **DELETE (Optional cleanup)**
+   - Delete all records for a game_session when session is abandoned or deleted
 
 **Benefits:**
 - ✅ Answer never exposed to frontend
 - ✅ Backend validates every answer
 - ✅ Server-side score is authoritative
 - ✅ Persistent audit trail (complete question/answer record)
+- ✅ Prevents duplicate questions in same game
+- ✅ Enables catch-up after connection loss
+- ✅ Complete analytics capability (can replay quiz attempts)
 - ✅ Question snapshots (if question deleted later, game history still valid)
 - ✅ Catch-up capability (GET /games/id recovers lost connection)
 - ✅ Supports concurrent quizzes per user
@@ -321,6 +358,17 @@ UI calculates percentage (3/5 = 60%) from this data, giving frontend flexibility
 
 ### Phase 3d: Question Creation
 13. POST /questions - Create new question
+
+### Phase 1b: Game Session Answer Audit Table (CRITICAL PREREQUISITE)
+**Blocked By:** Phase 1 (users, categories, questions exist)
+**Blocks:** All game/quiz endpoints (POST /games, GET /games/:id)
+**What:** Create game_session_answer model, repository, service, and CRUD operations
+**Why:** Required for question deduplication, next-question logic, and catch-up capability
+
+### Phase 2: Game/Quiz Endpoints (Now with audit tracking)
+**Depends On:** Phase 1b (game_session_answer table)
+**What:** Implement POST /games, GET /games/:id, POST /games/:id/:question_number
+**Enhanced By:** Audit trail prevents duplicates and enables validation
 
 ### Phase 3e: Persistent Quiz Session (New Design)
 14. POST /games - Create game session, return first question
