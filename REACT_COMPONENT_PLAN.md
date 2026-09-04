@@ -444,7 +444,7 @@ function App() {
 1. ✅ Renders user selection before quiz
 2. ✅ POST /quizzes creates session and displays first question
 3. ✅ Question does NOT show answer
-4. ✅ POST /quiz-answer validates and shows feedback
+4. ✅ POST /quizzes/<quiz_session_id>/<question_number> validates and shows feedback
 5. ✅ Quiz completes when final question answered
 6. ✅ Score calculated correctly from API response
 
