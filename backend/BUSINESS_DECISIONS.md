@@ -219,7 +219,7 @@ UI calculates percentage (3/5 = 60%) from this data, giving frontend flexibility
 - Supports "INTENSE" feature: track user game scores
 - Simple design for now (no auth, no passwords)
 - Allows score persistence to User.total_score when GameSession created
-- User ID becomes required for POST /game-sessions
+- User ID becomes required for POST /quizzes (starting a quiz session)
 - Frontend will eventually need to create/select user before quiz
 
 ---
