@@ -11,7 +11,7 @@ if "%1"=="" (
     python -m pytest _tests/ --cov=. --cov-report=term-missing --cov-report=html --tb=short -q
     echo.
     echo ✓ Backend tests completed with coverage report
-    echo HTML report generated: backend/htmlcov/index.html
+    echo HTML report generated: htmlcov/index.html
 ) else if "%1"=="no-cov" (
     echo Running backend tests...
     python -m pytest _tests/ --tb=short -v
@@ -21,7 +21,7 @@ if "%1"=="" (
     python -m pytest _tests/ --cov=. --cov-report=term-missing --cov-report=html --tb=short
     echo.
     echo ✓ Backend tests completed with coverage report
-    echo HTML report generated: backend/htmlcov/index.html
+    echo HTML report generated: htmlcov/index.html
 ) else (
     echo Usage: run_tests.cmd [no-cov^|coverage]
     echo.

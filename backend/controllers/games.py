@@ -58,10 +58,11 @@ def create_game():
             raise ValueError("number_of_questions must be between 1 and 20")
 
         # Create game session with initial score 0 and number of questions
+        # Use normalized_category_id to persist NULL in DB (not 0)
         game_session = GameSessionService.create_game_session(
             user_id=user_id,
             score=0,
-            category_id=category_id,
+            category_id=normalized_category_id,
             number_of_questions=number_of_questions
         )
 
@@ -204,6 +205,10 @@ def answer_question(game_session_id, question_number):
         abort(400)
     
     user_answer = body.get('user_answer')
+    
+    # Validate user_answer is a non-empty string (prevent AttributeError on .lower()/.strip())
+    if not isinstance(user_answer, str) or not user_answer.strip():
+        abort(400)  # Bad request: user_answer must be non-empty string
     
     try:
         # Validate game session exists (this check is independent of Phase 1b)

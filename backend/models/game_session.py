@@ -17,7 +17,7 @@ class GameSession(db.Model):
     score = Column(Integer, nullable=False)
     category_id = Column(Integer, ForeignKey('categories.id'), nullable=True)
     number_of_questions = Column(Integer, nullable=False, default=5)
-    date_played = Column(DateTime, default=lambda: datetime.now(timezone.utc), nullable=False)
+    date_played = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc), nullable=False)
 
     def __init__(self, user_id, score, category_id=None, number_of_questions=5):
         self.user_id = user_id
