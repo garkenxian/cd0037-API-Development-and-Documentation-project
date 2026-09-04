@@ -1,7 +1,17 @@
 """Games API Blueprint - Handles game session-related routes"""
 
 from flask import Blueprint, request, abort, jsonify
+from werkzeug.exceptions import HTTPException
 from services import GameSessionService, UserService, CategoryService, QuestionService
+
+# Phase 1b: Import GameSessionAnswerService for audit table integration
+# This service ensures questions are tracked and validated deterministically
+# TODO: Implement GameSessionAnswerService once Phase 1b model/repository are complete
+try:
+    from services import GameSessionAnswerService
+    PHASE_1B_AVAILABLE = True
+except ImportError:
+    PHASE_1B_AVAILABLE = False
 
 games_bp = Blueprint('games', __name__, url_prefix='/games')
 
@@ -67,6 +77,18 @@ def create_game():
         if not first_question:
             raise ValueError("No questions available for this category")
         
+        # Phase 1b: Store the initial question in game_session_answer audit table
+        # This ensures question_number=1 is deterministically linked to this specific question
+        # When answer_question() is called, it validates against this stored question
+        if PHASE_1B_AVAILABLE:
+            GameSessionAnswerService.store_initial_question(
+                game_session_id=game_session.id,
+                question_number=1,
+                question=first_question
+            )
+        # If Phase 1b not available, endpoint still works but with nondeterministic scoring
+        # This will be fixed once Phase 1b implementation is complete
+        
         return jsonify({
             'game_session_id': game_session.id,
             'question_number': 1,
@@ -91,24 +113,64 @@ def create_game():
 @games_bp.route('/<int:game_session_id>', methods=['GET'])
 def get_game(game_session_id):
     """
-    Get current game session state and next unanswered question
+    Get current game session state and next unanswered question (Catch-Up Endpoint)
     
-    Returns: game session state with next question or completion status
+    Returns:
+    - In-progress: {game_session_id, question_number, current_score, question, success: true}
+    - Completed: {game_session_id, status: "completed", current_score, success: true}
+    
     Errors: 404 (game session not found)
     """
     try:
         game_session = GameSessionService.get_game_session(game_session_id)
         
-        # For now, return basic game session info
-        # In a full implementation, track which questions have been answered
-        return jsonify({
-            'game_session_id': game_session.id,
-            'user_id': game_session.user_id,
-            'category_id': game_session.category_id,
-            'score': game_session.score,
-            'date_played': game_session.date_played.isoformat() if game_session.date_played else None,
-            'success': True
-        }), 200
+        # Phase 1b: Query game_session_answer audit table to find next unanswered question
+        if PHASE_1B_AVAILABLE:
+            # Get the next unanswered question number
+            next_question_number = GameSessionAnswerService.get_next_question_number(game_session_id)
+            
+            # Retrieve the next question that was prepared for this game
+            next_answer_record = GameSessionAnswerService.get_by_game_and_question_number(
+                game_session_id=game_session_id,
+                question_number=next_question_number
+            )
+            
+            if next_answer_record:
+                # Game is in-progress, return next question
+                return jsonify({
+                    'game_session_id': game_session.id,
+                    'question_number': next_question_number,
+                    'current_score': {
+                        'correct': GameSessionAnswerService.get_correct_count(game_session_id),
+                        'total_answered': next_question_number - 1,
+                        'total_questions': GameSessionAnswerService.get_total_questions(game_session_id)
+                    },
+                    'question': next_answer_record.get_question_format(),
+                    'success': True
+                }), 200
+            else:
+                # All questions answered, game completed
+                return jsonify({
+                    'game_session_id': game_session.id,
+                    'status': 'completed',
+                    'current_score': {
+                        'correct': GameSessionAnswerService.get_correct_count(game_session_id),
+                        'total_answered': GameSessionAnswerService.get_max_question_number(game_session_id),
+                        'total_questions': GameSessionAnswerService.get_total_questions(game_session_id)
+                    },
+                    'success': True
+                }), 200
+        else:
+            # Phase 1b not available - return basic info only (temporary fallback)
+            return jsonify({
+                'game_session_id': game_session.id,
+                'user_id': game_session.user_id,
+                'category_id': game_session.category_id,
+                'score': game_session.score,
+                'date_played': game_session.date_played.isoformat() if game_session.date_played else None,
+                'success': True,
+                'note': 'Full game state requires Phase 1b implementation'
+            }), 200
     except ValueError:
         abort(404)
     except Exception:
@@ -120,9 +182,12 @@ def answer_question(game_session_id, question_number):
     """
     Answer a question in an active game session
     
+    CRITICAL: This endpoint requires Phase 1b (game_session_answer audit table) to work correctly.
+    Without Phase 1b, scoring is nondeterministic (answers validated against random questions).
+    
     Request body: {"user_answer": string}
-    Returns: answer feedback and next question or completion status
-    Errors: 400 (bad request), 404 (not found)
+    Returns: answer feedback with score update
+    Errors: 400 (bad request), 404 (not found), 501 (Phase 1b not implemented), 422 (duplicate/out-of-sequence)
     """
     body = request.get_json()
 
@@ -130,29 +195,42 @@ def answer_question(game_session_id, question_number):
         abort(400)
     
     user_answer = body.get('user_answer')
-
+    
     try:
+        # Validate game session exists (this check is independent of Phase 1b)
         game_session = GameSessionService.get_game_session(game_session_id)
         
-        # For this implementation, we'll use a simple answer validation
-        # In a full implementation, this would track which question is being answered
-        # using a separate game_session_answer table and validate sequentially
+        # Phase 1b GATE: Block this endpoint if Phase 1b is not available
+        # Prevents nondeterministic scoring bug
+        if not PHASE_1B_AVAILABLE:
+            abort(501)  # Not Implemented - waiting for Phase 1b
         
-        # Get a question to validate the answer against
-        if game_session.category_id and game_session.category_id != 0:
-            question = QuestionService.get_random_question_by_category(game_session.category_id)
-        else:
-            questions_page = QuestionService.get_all_questions()
-            question = questions_page.items[0] if questions_page.items else None
+        # Phase 1b INTEGRATION: Retrieve the ORIGINAL question that was served for this question_number
+        # This ensures answers are validated against the same question the user saw
+        answer_record = GameSessionAnswerService.get_by_game_and_question_number(
+            game_session_id=game_session_id,
+            question_number=question_number
+        )
         
-        if not question:
-            return jsonify({
-                'success': False,
-                'error': 'No questions available'
-            }), 400
+        if not answer_record:
+            # Question_number was never served in this session
+            abort(404)
         
-        # Check if user_answer is correct (case-insensitive, trimmed)
-        is_correct = user_answer.lower().strip() == question.answer.lower().strip()
+        # Check if already answered (prevent duplicates)
+        if answer_record.is_already_answered():
+            abort(422)  # Unprocessable: question already answered in this session
+        
+        # Validate against the STORED question, not a random one
+        # This ensures deterministic, repeatable scoring
+        correct_answer = answer_record.correct_answer.lower().strip()
+        user_ans = user_answer.lower().strip()
+        is_correct = user_ans == correct_answer
+        
+        # Record the answer in the audit table (Phase 1b)
+        answer_record.record_user_answer(
+            user_answer=user_answer,
+            is_correct=is_correct
+        )
         
         # Update game session score if correct
         if is_correct:
@@ -163,14 +241,17 @@ def answer_question(game_session_id, question_number):
             'game_session_id': game_session.id,
             'question_number': question_number,
             'correct': is_correct,
-            'correct_answer': question.answer,
+            'correct_answer': answer_record.correct_answer,
             'current_score': {
-                'correct': game_session.score,
+                'correct': GameSessionAnswerService.get_correct_count(game_session_id),
                 'total_answered': question_number,
-                'total_questions': 5
+                'total_questions': GameSessionAnswerService.get_total_questions(game_session_id)
             },
             'success': True
         }), 200
+    except HTTPException:
+        # Re-raise HTTPException (from abort()) so it propagates correctly
+        raise
     except ValueError:
         abort(404)
     except Exception:
