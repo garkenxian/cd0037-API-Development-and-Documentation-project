@@ -1,6 +1,6 @@
 """GameSession model - Pure ORM definition"""
 
-from datetime import datetime, UTC
+from datetime import datetime, timezone
 from sqlalchemy import Column, Integer, ForeignKey, DateTime
 from . import db
 
@@ -16,7 +16,7 @@ class GameSession(db.Model):
     user_id = Column(Integer, ForeignKey('users.id'), nullable=False)
     score = Column(Integer, nullable=False)
     category_id = Column(Integer, ForeignKey('categories.id'), nullable=True)
-    date_played = Column(DateTime, default=lambda: datetime.now(UTC), nullable=False)
+    date_played = Column(DateTime, default=lambda: datetime.now(timezone.utc), nullable=False)
 
     def __init__(self, user_id, score, category_id=None):
         self.user_id = user_id

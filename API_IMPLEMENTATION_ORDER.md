@@ -115,21 +115,21 @@ Each endpoint is implemented in sequence with full end-to-end testing:
 
 ---
 
-## 4️⃣ POST /quizzes - Create Quiz Session
+## 4️⃣ POST /games - Create Game Session
 
 **Backend Work:**
-- Endpoint: `POST /quizzes`
+- Endpoint: `POST /games`
 - Request: `{user_id, category_id, number_of_questions}`
 - Response: `{game_session_id, question_number, current_score: {correct, total_answered, total_questions}, question: {...no answer}, success: true}`
-- Database: Insert into quiz_session table, randomly select first question
+- Database: Insert into game_sessions table, randomly select first question
 - Validation: Check user exists, category exists (0 = all), number_of_questions valid (1-20)
 - Error codes: 400 (missing), 404 (user/category), 422 (invalid count)
 - Tests: Success case, invalid user error, invalid category error, invalid count error
 
 **Frontend Work:**
 - Component: QuizView.js (rewrite)
-- Feature: Category selection + quiz start button
-- API call: POST /quizzes
+- Feature: Category selection + game start button
+- API call: POST /games
 - Display: Store game_session_id, show first question (no answer shown)
 
 **Integration Test:**

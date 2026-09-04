@@ -1,5 +1,7 @@
 # Running Backend Tests
 
+> ⚠️ **Python Version Required**: This project requires **Python 3.10** to match CI/CD environment. See [PYTHON_VERSION.md](../PYTHON_VERSION.md) for setup instructions.
+
 This directory contains the backend Flask application with comprehensive test coverage. The test runner has been configured to suppress expected warnings (ResourceWarning, DeprecationWarning) for clean output.
 
 ## Running Tests on Windows (PowerShell)
@@ -36,9 +38,26 @@ make test-backend-coverage
 
 ## Test Results
 
-- **Total Tests**: 115
-- **Coverage**: 72.63%
+- **Total Tests**: 170 (was 115)
+- **Overall Coverage**: 93.51% (was 72.63%)
 - **Warnings**: 0 (suppressed by configuration)
+
+### Coverage by Layer
+
+| Layer | Files | Coverage | Status |
+|-------|-------|----------|--------|
+| **Models** | 4 files | 98.89% | ✅ Excellent |
+| **Repositories** | 4 files | 85.56% | ✅ Good |
+| **Services** | 4 files | 99.64% | ✅ Excellent |
+| **Controllers** | 4 files | 85.01% | ✅ Good |
+| **Application** | 2 files | 92.11% | ✅ Excellent |
+
+### Service Layer Details (100% Coverage)
+
+- **UserService**: 100% - All CRUD operations + transaction handling
+- **CategoryService**: 100% - All category operations + error scenarios
+- **GameSessionService**: 100% - All game session operations + stats
+- **QuestionService**: 98.55% - All question operations (only 1 unused line)
 
 ## Coverage Report
 

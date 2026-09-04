@@ -401,7 +401,7 @@ Complete REST API specification for Trivia Quiz Application with 16 total endpoi
 **Response (Game Completed - 200):**
 ```json
 {
-  "quiz_session_id": 42,
+  "game_session_id": 42,
   "status": "completed",
   "current_score": {
     "correct": 4,
@@ -486,7 +486,7 @@ Complete REST API specification for Trivia Quiz Application with 16 total endpoi
 **Response (Answer Incorrect - 200):**
 ```json
 {
-  "quiz_session_id": 42,
+  "game_session_id": 42,
   "question_number": 2,
   "correct": false,
   "correct_answer": "Paris",
@@ -818,10 +818,10 @@ Complete REST API specification for Trivia Quiz Application with 16 total endpoi
    GET /categories
    → {categories: {1: "Science", 2: "Art", ...}}
 
-3. Create quiz session, get first question (NO ANSWER RETURNED)
-   POST /quizzes {user_id: 1, category_id: 1, number_of_questions: 5}
+3. Create game session, get first question (NO ANSWER RETURNED)
+   POST /games {user_id: 1, category_id: 1, number_of_questions: 5}
    → {
-       quiz_session_id: 42,
+       game_session_id: 42,
        question_number: 1,
        current_score: {correct: 0, total_answered: 0, total_questions: 5},
        question: {id: 7, question: "What is H2O?", ...}
@@ -947,13 +947,13 @@ Tracks overall quiz session information
 ```
 
 ### quiz_session_answer
-Audit trail - each question answered in a quiz
+Audit trail - each question answered in a game
 ```
 - id (PK)
-- quiz_session_id (FK → quiz_session)
+- game_session_id (FK → game_sessions)
 - question_number (integer) - which question in sequence (1-5, etc)
 - question_id (FK → questions)
-- question_text (text) - snapshot of question at time of quiz (if deleted later, history preserved)
+- question_text (text) - snapshot of question at time of game (if deleted later, history preserved)
 - user_answer (text)
 - correct_answer (text)
 - is_correct (boolean)
@@ -961,10 +961,10 @@ Audit trail - each question answered in a quiz
 ```
 
 **Relationships:**
-- quiz_session.user_id → users.id
-- quiz_session.category_id → categories.id (can be NULL for all categories)
-- quiz_session_answer.quiz_session_id → quiz_session.id
-- quiz_session_answer.question_id → questions.id
+- game_sessions.user_id → users.id
+- game_sessions.category_id → categories.id (can be NULL for all categories)
+- game_session_answer.game_session_id → game_sessions.id
+- game_session_answer.question_id → questions.id
 
 **Why This Design:**
 - ✅ Persistent audit trail (user can replay quiz)

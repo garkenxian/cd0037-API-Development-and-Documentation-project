@@ -33,9 +33,7 @@ def create_app(test_config=None):
     # Setup CORS - Allow requests from all origins
     CORS(app, resources={r"/*": {"origins": "*"}})
     
-    # Create database tables
-    with app.app_context():
-        db.create_all()
+    # Database tables are created in setup_db()
 
     # Register response middleware
     @app.after_request

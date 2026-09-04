@@ -165,9 +165,8 @@ class QuestionsEndpointTestCase(unittest.TestCase):
             }
         )
         
-        # Should still return 201 as we don't validate category existence at endpoint level
-        # (database constraint will fail on commit)
-        self.assertEqual(response.status_code, 201)
+        # Should return 422 as category validation now prevents orphaned questions
+        self.assertEqual(response.status_code, 422)
 
     def test_create_multiple_questions_success(self):
         """Test creating multiple questions successfully"""

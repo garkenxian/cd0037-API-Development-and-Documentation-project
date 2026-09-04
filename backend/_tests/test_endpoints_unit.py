@@ -232,8 +232,9 @@ class QuestionsEndpointUnitTests(unittest.TestCase):
         db.drop_all()
         self.app_context.pop()
 
+    @patch('controllers.questions.CategoryService')
     @patch('controllers.questions.QuestionService')
-    def test_create_question_returns_201_on_success(self, mock_service):
+    def test_create_question_returns_201_on_success(self, mock_service, mock_category_service):
         """Test endpoint returns 201 on successful question creation"""
         mock_question = Mock()
         mock_question.format.return_value = {
@@ -245,6 +246,7 @@ class QuestionsEndpointUnitTests(unittest.TestCase):
             'rating': 4.5
         }
         mock_service.create_question.return_value = mock_question
+        mock_category_service.get_category.return_value = Mock(id=1)
         
         response = self.client.post(
             '/questions',
@@ -261,12 +263,14 @@ class QuestionsEndpointUnitTests(unittest.TestCase):
         data = response.get_json()
         self.assertEqual(data['question'], 'What is H2O?')
 
+    @patch('controllers.questions.CategoryService')
     @patch('controllers.questions.QuestionService')
-    def test_create_question_calls_service_with_correct_args(self, mock_service):
+    def test_create_question_calls_service_with_correct_args(self, mock_service, mock_category_service):
         """Test endpoint calls QuestionService with correct arguments"""
         mock_question = Mock()
         mock_question.format.return_value = {}
         mock_service.create_question.return_value = mock_question
+        mock_category_service.get_category.return_value = Mock(id=1)
         
         self.client.post(
             '/questions',
@@ -343,12 +347,14 @@ class QuestionsEndpointUnitTests(unittest.TestCase):
         
         self.assertEqual(response.status_code, 400)
 
+    @patch('controllers.questions.CategoryService')
     @patch('controllers.questions.QuestionService')
-    def test_create_question_uses_default_rating(self, mock_service):
+    def test_create_question_uses_default_rating(self, mock_service, mock_category_service):
         """Test endpoint uses default rating of 0"""
         mock_question = Mock()
         mock_question.format.return_value = {}
         mock_service.create_question.return_value = mock_question
+        mock_category_service.get_category.return_value = Mock(id=1)
         
         self.client.post(
             '/questions',
@@ -364,22 +370,23 @@ class QuestionsEndpointUnitTests(unittest.TestCase):
         call_kwargs = mock_service.create_question.call_args[1]
         self.assertEqual(call_kwargs['rating'], 0)
 
+    @patch('controllers.questions.CategoryService')
     @patch('controllers.questions.QuestionService')
-    def test_create_question_returns_400_for_validation_error(self, mock_service):
-        """Test endpoint returns 400 for service validation errors"""
-        mock_service.create_question.side_effect = ValueError("Question too short")
+    def test_create_question_returns_400_for_validation_error(self, mock_service, mock_category_service):
+        """Test endpoint returns 422 for category validation errors"""
+        mock_category_service.get_category.side_effect = ValueError("Category not found")
         
         response = self.client.post(
             '/questions',
             json={
                 'question': 'Q?',
                 'answer': 'A',
-                'category': 1,
+                'category': 9999,
                 'difficulty': 1
             }
         )
         
-        self.assertEqual(response.status_code, 400)
+        self.assertEqual(response.status_code, 422)
 
 
 if __name__ == '__main__':

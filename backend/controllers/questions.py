@@ -1,7 +1,7 @@
 """Questions API Blueprint - Handles question-related routes"""
 
 from flask import Blueprint, request, abort, jsonify
-from services import QuestionService
+from services import QuestionService, CategoryService
 
 questions_bp = Blueprint('questions', __name__, url_prefix='/questions')
 
@@ -37,6 +37,9 @@ def create_question():
         abort(400)
 
     try:
+        # Validate category exists (prevents orphaned questions when FK constraints aren't enforced, e.g. SQLite)
+        CategoryService.get_category(category)
+        
         question = QuestionService.create_question(
             question_text=question_text,
             answer=answer,
