@@ -16,7 +16,7 @@ db = SQLAlchemy()
 def setup_db(app, database_path=None):
     """Setup database for Flask app"""
     if database_path is None:
-        database_path = os.getenv('DATABASE_URL')
+        database_path = os.getenv('SQLALCHEMY_DATABASE_URI') or os.getenv('DATABASE_URL')
     
     app.config['SQLALCHEMY_DATABASE_URI'] = database_path
     app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False

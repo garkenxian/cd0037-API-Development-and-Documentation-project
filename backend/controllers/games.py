@@ -97,7 +97,13 @@ def create_game():
                 'total_answered': 0,
                 'total_questions': number_of_questions
             },
-            'question': first_question.format(),
+            'question': {
+                'id': first_question.id,
+                'question': first_question.question,
+                'category': first_question.category,
+                'difficulty': first_question.difficulty,
+                'rating': first_question.rating
+            }
             'success': True
         }), 201
     except ValueError as e:
