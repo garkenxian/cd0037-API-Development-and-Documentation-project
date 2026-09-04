@@ -171,7 +171,7 @@ help:
    - If payload has `searchTerm` → search questions (case-insensitive substring)
    - Else → create new question (validate all required fields)
 8. Implement `GET /categories/<int:id>/questions` - return questions filtered by category
-9. Implement `POST /quizzes` - return random question from category, excluding previous_questions list
+9. Implement `POST /games` - return random question from category, excluding previous_questions list
 10. Add input validation for all POST endpoints (validate required fields, types, ranges)
 
 **Relevant Files:**
@@ -204,7 +204,7 @@ help:
 6. Implement pytest API tests with better fixtures and parametrization:
    - `test_api_categories.py` - GET /categories tests
    - `test_api_questions.py` - GET/POST/DELETE /questions tests
-   - `test_api_quiz.py` - POST /quizzes tests
+   - `test_api_game.py` - POST /games tests
    - `test_api_errors.py` - Error handler tests
 7. Set up test coverage reporting (pytest-cov, coverage.xml, htmlcov/)
 8. Create test data seeding script for trivia_test database
@@ -236,7 +236,7 @@ help:
    - Implement `GET /users` to list all users with scores *(parallel with step 2.4)*
    - Implement `GET /users/<int:id>` to get user details and game history *(parallel with step 2.5)*
    - Implement `POST /game-sessions` to record completed quiz results (user_id, score, category) *(parallel with step 2.6)*
-   - Update `POST /quizzes` to optionally accept user_id for tracking
+   - Update `POST /games` to optionally accept user_id for tracking
    - Implement `GET /leaderboard` to show top users by total_score
 3. **Category Management Feature:**
    - Implement `POST /categories` to create new category (requires type/name)

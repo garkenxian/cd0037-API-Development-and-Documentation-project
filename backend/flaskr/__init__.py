@@ -1,107 +1,84 @@
-from flask import Flask, request, abort, jsonify
+"""
+Flask Application Factory and Setup
+Implements application initialization with blueprint-based routing
+"""
+
+from flask import Flask, jsonify
 from flask_cors import CORS
-import random
 
-from data_access import setup_db, Question, Category, db
+from data_access import setup_db, db
+from controllers import users_bp, categories_bp, questions_bp, games_bp
 
-QUESTIONS_PER_PAGE = 10
 
 def create_app(test_config=None):
-    # create and configure the app
+    """
+    Create and configure the Flask application
+    
+    Args:
+        test_config: Optional test configuration dictionary
+        
+    Returns:
+        Configured Flask application with all blueprints registered
+    """
+    # Create and configure the app
     app = Flask(__name__)
 
+    # Setup database
     if test_config is None:
         setup_db(app)
     else:
         database_path = test_config.get('SQLALCHEMY_DATABASE_URI')
         setup_db(app, database_path=database_path)
 
-    """
-    @TODO: Set up CORS. Allow '*' for origins. Delete the sample route after completing the TODOs
-    """
+    # Setup CORS - Allow requests from all origins
+    CORS(app, resources={r"/*": {"origins": "*"}})
+    
+    # Create database tables
     with app.app_context():
         db.create_all()
 
-    """
-    @TODO: Use the after_request decorator to set Access-Control-Allow
-    """
+    # Register response middleware
+    @app.after_request
+    def after_request(response):
+        """Set CORS headers on all responses"""
+        response.headers.add(
+            "Access-Control-Allow-Headers", "Content-Type,Authorization,true"
+        )
+        response.headers.add(
+            "Access-Control-Allow-Methods", "GET,PUT,POST,DELETE,OPTIONS"
+        )
+        return response
 
-    """
-    @TODO:
-    Create an endpoint to handle GET requests
-    for all available categories.
-    """
+    # Register blueprints
+    app.register_blueprint(users_bp)
+    app.register_blueprint(categories_bp)
+    app.register_blueprint(questions_bp)
+    app.register_blueprint(games_bp)
+    # Register error handlers
+    @app.errorhandler(400)
+    def bad_request(error):
+        """Handle 400 Bad Request errors"""
+        return jsonify({"error": "Bad Request"}), 400
 
+    @app.errorhandler(404)
+    def not_found(error):
+        """Handle 404 Not Found errors"""
+        return jsonify({"error": "Not Found"}), 404
 
-    """
-    @TODO:
-    Create an endpoint to handle GET requests for questions,
-    including pagination (every 10 questions).
-    This endpoint should return a list of questions,
-    number of total questions, current category, categories.
+    @app.errorhandler(422)
+    def unprocessable_entity(error):
+        """Handle 422 Unprocessable Entity errors"""
+        return jsonify({"error": "Unprocessable Entity"}), 422
 
-    TEST: At this point, when you start the application
-    you should see questions and categories generated,
-    ten questions per page and pagination at the bottom of the screen for three pages.
-    Clicking on the page numbers should update the questions.
-    """
+    @app.errorhandler(501)
+    def not_implemented(error):
+        """Handle 501 Not Implemented errors"""
+        return jsonify({"error": "Not Implemented"}), 501
 
-    """
-    @TODO:
-    Create an endpoint to DELETE question using a question ID.
-
-    TEST: When you click the trash icon next to a question, the question will be removed.
-    This removal will persist in the database and when you refresh the page.
-    """
-
-    """
-    @TODO:
-    Create an endpoint to POST a new question,
-    which will require the question and answer text,
-    category, and difficulty score.
-
-    TEST: When you submit a question on the "Add" tab,
-    the form will clear and the question will appear at the end of the last page
-    of the questions list in the "List" tab.
-    """
-
-    """
-    @TODO:
-    Create a POST endpoint to get questions based on a search term.
-    It should return any questions for whom the search term
-    is a substring of the question.
-
-    TEST: Search by any phrase. The questions list will update to include
-    only question that include that string within their question.
-    Try using the word "title" to start.
-    """
-
-    """
-    @TODO:
-    Create a GET endpoint to get questions based on category.
-
-    TEST: In the "List" tab / main screen, clicking on one of the
-    categories in the left column will cause only questions of that
-    category to be shown.
-    """
-
-    """
-    @TODO:
-    Create a POST endpoint to get questions to play the quiz.
-    This endpoint should take category and previous question parameters
-    and return a random questions within the given category,
-    if provided, and that is not one of the previous questions.
-
-    TEST: In the "Play" tab, after a user selects "All" or a category,
-    one question at a time is displayed, the user is allowed to answer
-    and shown whether they were correct or not.
-    """
-
-    """
-    @TODO:
-    Create error handlers for all expected errors
-    including 404 and 422.
-    """
+    @app.errorhandler(500)
+    def internal_server_error(error):
+        """Handle 500 Internal Server Error"""
+        return jsonify({"error": "Internal Server Error"}), 500
 
     return app
 

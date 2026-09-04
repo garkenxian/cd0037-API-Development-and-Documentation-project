@@ -1,32 +1,28 @@
-import os
-from dotenv import load_dotenv
-from flask_sqlalchemy import SQLAlchemy
-
-# Load environment variables from .env file
-load_dotenv()
-
-# Build database URL from environment variables or use DATABASE_URL if provided
-database_path = os.getenv('DATABASE_URL')
-
-# Initialize SQLAlchemy
-db = SQLAlchemy()
-
 """
-setup_db(app)
-    binds a flask application and a SQLAlchemy service
+Data Access Layer Package
+Exports models from models/ package and repositories for queries
+Maintains backward compatibility with existing imports
 """
-def setup_db(app, database_path=database_path):
-    app.config['SQLALCHEMY_DATABASE_URI'] = database_path
-    app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
-    db.init_app(app)
-    with app.app_context():
-        db.create_all()
 
-# Import models after db is initialized
-from .question import Question
-from .category import Category
-from .user import User
-from .game_session import GameSession
+# Import db and setup from models package
+from models import db, setup_db, User, Category, Question, GameSession
 
-# Export all models and utilities
-__all__ = ['db', 'setup_db', 'Question', 'Category', 'User', 'GameSession']
+# Import repositories
+from .user_repository import UserRepository
+from .category_repository import CategoryRepository
+from .question_repository import QuestionRepository
+from .game_session_repository import GameSessionRepository
+
+# Export everything for backward compatibility
+__all__ = [
+    'db',
+    'setup_db',
+    'User',
+    'Category', 
+    'Question',
+    'GameSession',
+    'UserRepository',
+    'CategoryRepository',
+    'QuestionRepository',
+    'GameSessionRepository'
+]

@@ -1,4 +1,6 @@
-from datetime import datetime
+"""GameSession model - Pure ORM definition"""
+
+from datetime import datetime, UTC
 from sqlalchemy import Column, Integer, ForeignKey, DateTime
 from . import db
 
@@ -6,6 +8,7 @@ from . import db
 class GameSession(db.Model):
     """
     GameSession model for tracking individual quiz game results
+    Pure ORM definition - no business logic
     """
     __tablename__ = 'game_sessions'
 
@@ -13,26 +16,12 @@ class GameSession(db.Model):
     user_id = Column(Integer, ForeignKey('users.id'), nullable=False)
     score = Column(Integer, nullable=False)
     category_id = Column(Integer, ForeignKey('categories.id'), nullable=True)
-    date_played = Column(DateTime, default=datetime.utcnow, nullable=False)
+    date_played = Column(DateTime, default=lambda: datetime.now(UTC), nullable=False)
 
     def __init__(self, user_id, score, category_id=None):
         self.user_id = user_id
         self.score = score
         self.category_id = category_id
-
-    def insert(self):
-        """Insert this game session into the database"""
-        db.session.add(self)
-        db.session.commit()
-
-    def update(self):
-        """Update this game session in the database"""
-        db.session.commit()
-
-    def delete(self):
-        """Delete this game session from the database"""
-        db.session.delete(self)
-        db.session.commit()
 
     def format(self):
         """Return formatted game session as dictionary"""

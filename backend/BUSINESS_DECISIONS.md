@@ -77,7 +77,7 @@ POST /quizzes
 
 Response (201):
 {
-  "quiz_session_id": 42,
+  "game_session_id": 42,
   "question_number": 1,
   "current_score": {"correct": 0, "total_answered": 0, "total_questions": 5},
   "question": {"id": 7, "question": "What is H2O?", ...}
@@ -104,13 +104,13 @@ Response (200):
 
 #### Step 3: Repeat for Each Question (or Catch-Up)
 ```
-GET /quizzes/42 - Returns next unanswered question + current score (recovery/catch-up)
-POST /quizzes/42/5 - Answer final question, quiz auto-completes
+GET /games/42 - Returns next unanswered question + current score (recovery/catch-up)
+POST /games/42/5 - Answer final question, game auto-completes
 ```
 
 #### Auto-Completion
 When user answers final question (question_number = total_questions):
-- Quiz marked as `completed` in quiz_session table
+- Game marked as `completed` in game_sessions table
 - GameSession record created with final score
 - User.total_score updated += correct_count
 - User.games_played incremented
@@ -118,19 +118,19 @@ When user answers final question (question_number = total_questions):
 
 **New Database Tables:**
 
-1. **quiz_session**: Tracks quiz sessions
+1. **game_sessions**: Tracks game sessions
    - id, user_id, category_id, number_of_questions, status, created_at, completed_at
 
-2. **quiz_session_answer**: Audit trail - each answer in a quiz
-   - id, quiz_session_id, question_number, question_id, question_text (snapshot), user_answer, correct_answer, is_correct, answered_at
+2. **game_session_answer**: Audit trail - each answer in a game
+   - id, game_session_id, question_number, question_id, question_text (snapshot), user_answer, correct_answer, is_correct, answered_at
 
 **Benefits:**
 - ✅ Answer never exposed to frontend
 - ✅ Backend validates every answer
 - ✅ Server-side score is authoritative
 - ✅ Persistent audit trail (complete question/answer record)
-- ✅ Question snapshots (if question deleted later, quiz history still valid)
-- ✅ Catch-up capability (GET /quizzes/id recovers lost connection)
+- ✅ Question snapshots (if question deleted later, game history still valid)
+- ✅ Catch-up capability (GET /games/id recovers lost connection)
 - ✅ Supports concurrent quizzes per user
 - ✅ Complete analytics data (can replay quiz attempts)
 
@@ -219,7 +219,7 @@ UI calculates percentage (3/5 = 60%) from this data, giving frontend flexibility
 - Supports "INTENSE" feature: track user game scores
 - Simple design for now (no auth, no passwords)
 - Allows score persistence to User.total_score when GameSession created
-- User ID becomes required for POST /quizzes (starting a quiz session)
+- User ID becomes required for POST /games (starting a game session)
 - Frontend will eventually need to create/select user before quiz
 
 ---
@@ -227,7 +227,7 @@ UI calculates percentage (3/5 = 60%) from this data, giving frontend flexibility
 ## Complete Quiz Flow (User Perspective)
 
 ### Current Flow (Vulnerable)
-1. Frontend: GET /quizzes → receives answer (SECURITY ISSUE)
+- Frontend: GET /games → receives answer (SECURITY ISSUE)
 2. Frontend: Evaluate answer locally (cheatable)
 3. Frontend: Track score in React state (mutable)
 4. Frontend: After quiz, show final score (no server validation)
@@ -238,14 +238,14 @@ UI calculates percentage (3/5 = 60%) from this data, giving frontend flexibility
    - GET /categories → select category
    
 2. **Create Quiz Session:**
-   - POST /quizzes with user_id, category_id, number_of_questions
+   - POST /games with user_id, category_id, number_of_questions
    - Backend returns quiz_session_id + first question (no answer)
    - Creates quiz_session record in DB
    
 3. **Quiz Loop (each question):**
    - User sees question (no answer exposed)
    - User types answer
-   - Frontend: POST /quizzes/<session_id>/<question_number> with user_answer
+   - Frontend: POST /games/<session_id>/<question_number> with user_answer
    - Backend: Validates against DB answer, creates quiz_session_answer record
    - Backend: Returns {correct: true/false, correct_answer, current_score: {...}, next_question}
    - Frontend: Display current score (informational only, server is authoritative)
@@ -258,7 +258,7 @@ UI calculates percentage (3/5 = 60%) from this data, giving frontend flexibility
      - Next question field returns null
    
 5. **Connection Loss Recovery:**
-   - Frontend: GET /quizzes/<session_id>
+   - Frontend: GET /games/<session_id>
    - Backend: Returns next unanswered question + current score
    - User can catch up mid-quiz
 
@@ -283,9 +283,9 @@ UI calculates percentage (3/5 = 60%) from this data, giving frontend flexibility
 - 🆕 `PUT /categories/<int:id>` - Update category
 - 🆕 `DELETE /categories/<int:id>` - Delete category
 
-- 🆕 `POST /quizzes` - Create quiz session (returns first question, no answer)
-- 🆕 `GET /quizzes/<int:quiz_session_id>` - Get current quiz state (catch-up)
-- 🆕 `POST /quizzes/<int:quiz_session_id>/<int:question_number>` - Answer question, return next
+- 🆕 `POST /games` - Create game session (returns first question, no answer)
+- 🆕 `GET /games/<int:game_session_id>` - Get current game state (catch-up)
+- 🆕 `POST /games/<int:game_session_id>/<int:question_number>` - Answer question, return next
 
 - 🆕 `GET /users` - List all users
 - 🆕 `GET /users/<int:id>` - Get user details + history
@@ -323,9 +323,9 @@ UI calculates percentage (3/5 = 60%) from this data, giving frontend flexibility
 13. POST /questions - Create new question
 
 ### Phase 3e: Persistent Quiz Session (New Design)
-14. POST /quizzes - Create quiz session, return first question
-15. GET /quizzes/<id> - Catch-up endpoint (get current state)
-16. POST /quizzes/<id>/<question_number> - Answer question, return next + score
+14. POST /games - Create game session, return first question
+15. GET /games/<id> - Catch-up endpoint (get current state)
+16. POST /games/<id>/<question_number> - Answer question, return next + score
 
 ### Phase 3f: Error Handlers (All Phases)
 - 404, 422, 400, 500 error handlers
@@ -334,12 +334,12 @@ UI calculates percentage (3/5 = 60%) from this data, giving frontend flexibility
 
 ## Frontend Impact (To Be Done Later)
 
-- Quiz component uses persistent session architecture (quiz_session_id persisted)
+- Game component uses persistent session architecture (game_session_id persisted)
 - No longer has access to answer in state (security win!)
 - Must create user before quiz (new flow)
 - Score displayed locally from API response `{correct: 3, total_answered: 4, total_questions: 5}` (UI calculates %)
 - Server score is authoritative (not React state)
-- Connection recovery: GET /quizzes/<session_id> catches up mid-quiz
+- Connection recovery: GET /games/<session_id> catches up mid-game
 - After final question answered, quiz auto-completes (no additional call needed)
 - New user select/create UI before quiz start
 - New leaderboard view (GET /leaderboard)
@@ -378,9 +378,9 @@ UI calculates percentage (3/5 = 60%) from this data, giving frontend flexibility
 
 **Backend Tests (pytest):**
 - Quiz endpoints: 
-  - POST /quizzes creates session with first question (no answer)
-  - GET /quizzes/<id> returns current state and next unanswered question
-  - POST /quizzes/<id>/<number> validates answers, prevents re-answers
+  - POST /games creates session with first question (no answer)
+  - GET /games/<id> returns current state and next unanswered question
+  - POST /games/<id>/<number> validates answers, prevents re-answers
   - Auto-completion when final question answered
   - Catch-up recovery works
 - User endpoints: CRUD operations, unique constraint
@@ -390,7 +390,7 @@ UI calculates percentage (3/5 = 60%) from this data, giving frontend flexibility
 **Frontend Tests:** (Later phase)
 - Quiz flow: Create quiz, answer questions, see validated responses
 - User creation/selection before quiz
-- Connection loss recovery (GET /quizzes/<id>)
+- Connection loss recovery (GET /games/<id>)
 - Score display calculation from {correct, total_answered, total_questions}
 - Leaderboard and user profile views
 

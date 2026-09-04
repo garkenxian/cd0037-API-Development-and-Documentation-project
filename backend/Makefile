@@ -31,10 +31,18 @@ run:
 	$(PYTHON) -m flask run --reload
 
 test:
-	$(PYTHON) -m pytest _tests/ -v
+ifeq ($(OS),Windows_NT)
+	powershell -NoProfile -Command "& '.\run_tests.ps1' -mode no-cov"
+else
+	$(PYTHON) -m pytest _tests/ --tb=short -v
+endif
 
 test-cov:
-	$(PYTHON) -m pytest _tests/ -v --cov=flaskr --cov-report=html --cov-report=term
+ifeq ($(OS),Windows_NT)
+	powershell -NoProfile -Command "& '.\run_tests.ps1'"
+else
+	$(PYTHON) -m pytest _tests/ --cov=. --cov-report=term-missing --cov-report=html --tb=short
+endif
 
 test-all: test
 

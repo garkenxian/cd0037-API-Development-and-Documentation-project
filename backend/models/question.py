@@ -1,3 +1,5 @@
+"""Question model - Pure ORM definition"""
+
 from sqlalchemy import Column, Integer, String, Float, ForeignKey
 from . import db
 
@@ -5,6 +7,7 @@ from . import db
 class Question(db.Model):
     """
     Question model representing a trivia question with rating support
+    Pure ORM definition - no business logic
     """
     __tablename__ = 'questions'
 
@@ -21,20 +24,6 @@ class Question(db.Model):
         self.category = category
         self.difficulty = difficulty
         self.rating = rating
-
-    def insert(self):
-        """Insert this question into the database"""
-        db.session.add(self)
-        db.session.commit()
-
-    def update(self):
-        """Update this question in the database"""
-        db.session.commit()
-
-    def delete(self):
-        """Delete this question from the database"""
-        db.session.delete(self)
-        db.session.commit()
 
     def format(self):
         """Return formatted question as dictionary"""

@@ -120,7 +120,7 @@ Each endpoint is implemented in sequence with full end-to-end testing:
 **Backend Work:**
 - Endpoint: `POST /quizzes`
 - Request: `{user_id, category_id, number_of_questions}`
-- Response: `{quiz_session_id, question_number, current_score: {correct, total_answered, total_questions}, question: {...no answer}, success: true}`
+- Response: `{game_session_id, question_number, current_score: {correct, total_answered, total_questions}, question: {...no answer}, success: true}`
 - Database: Insert into quiz_session table, randomly select first question
 - Validation: Check user exists, category exists (0 = all), number_of_questions valid (1-20)
 - Error codes: 400 (missing), 404 (user/category), 422 (invalid count)
@@ -130,16 +130,16 @@ Each endpoint is implemented in sequence with full end-to-end testing:
 - Component: QuizView.js (rewrite)
 - Feature: Category selection + quiz start button
 - API call: POST /quizzes
-- Display: Store quiz_session_id, show first question (no answer shown)
+- Display: Store game_session_id, show first question (no answer shown)
 
 **Integration Test:**
 ```
 1. User logged in as alice_wonder (user_id: 1)
 2. User selects "Science" category (category_id: 1)
-3. Frontend POSTs /quizzes {user_id: 1, category_id: 1, number_of_questions: 5}
+3. Frontend POSTs /games {user_id: 1, category_id: 1, number_of_questions: 5}
 4. Backend creates quiz_session record (id: 42)
 5. Backend randomly selects first science question (id: 7)
-6. Backend returns {quiz_session_id: 42, question_number: 1, question: {...}, current_score: {correct: 0, total_answered: 0, total_questions: 5}}
+6. Backend returns {game_session_id: 42, question_number: 1, question: {...}, current_score: {correct: 0, total_answered: 0, total_questions: 5}}
 7. Frontend displays question 1/5, shows no answer field
 8. Verify quiz_session exists in DB
 ```
@@ -169,7 +169,7 @@ Each endpoint is implemented in sequence with full end-to-end testing:
 **Frontend Work:**
 - Component: QuizView.js (continue rewrite)
 - Feature: Answer input + submit button + feedback display
-- API call: POST /quizzes/<session_id>/<question_num>
+- API call: POST /games/<session_id>/<question_num>
 - State: Track current_score, display feedback (correct/incorrect + answer)
 - Display: Show next question, OR show completion screen if null
 
@@ -177,7 +177,7 @@ Each endpoint is implemented in sequence with full end-to-end testing:
 ```
 1. Quiz session 42 started, question 1 displayed
 2. User enters answer "water"
-3. Frontend POSTs /quizzes/42/1 {user_answer: "water"}
+3. Frontend POSTs /games/42/1 {user_answer: "water"}
 4. Backend validates: quiz_session 42 exists, question 1 not answered yet
 5. Backend fetches question, normalizes both answers, validates match
 6. Backend creates quiz_session_answer record (session_id: 42, question_number: 1, is_correct: true)
@@ -199,7 +199,7 @@ Each endpoint is implemented in sequence with full end-to-end testing:
 20. Verify User.games_played = 1 in DB
 ```
 
-**Dependencies:** POST /quizzes (need active session)
+**Dependencies:** POST /games (need active session)
 **Estimated complexity:** Hard (most complex logic)
 **Why fifth:** Core quiz gameplay
 
@@ -429,8 +429,8 @@ Each endpoint is implemented in sequence with full end-to-end testing:
 **Backend Work:**
 - Endpoint: `GET /quizzes/<quiz_session_id>`
 - Request: None
-- Response (in progress): `{quiz_session_id, question_number, current_score: {...}, question: {...}, success: true}`
-- Response (completed): `{quiz_session_id, status: "completed", current_score: {...}, success: true}`
+- Response (in progress): `{game_session_id, question_number, current_score: {...}, question: {...}, success: true}`
+- Response (completed): `{game_session_id, status: "completed", current_score: {...}, success: true}`
 - Database: Query quiz_session by id, check status, get next unanswered question
 - Validation: Check quiz_session exists
 - Error codes: 404 (not found)
@@ -439,24 +439,24 @@ Each endpoint is implemented in sequence with full end-to-end testing:
 **Frontend Work:**
 - Component: QuizView.js (add catch-up logic)
 - Feature: Optional - auto-recover if connection lost
-- API call: GET /quizzes/<id> (optional on mount)
+- API call: GET /games/<id> (optional on mount)
 - Display: Show current state + next question OR completion screen
 
 **Integration Test:**
 ```
 1. User mid-quiz (answered 3/5 questions)
 2. Connection drops, refresh page
-3. Frontend calls GET /quizzes/42
-4. Backend returns current state: {quiz_session_id: 42, question_number: 4, current_score: {correct: 3, ...}}
+3. Frontend calls GET /games/42
+4. Backend returns current state: {game_session_id: 42, question_number: 4, current_score: {correct: 3, ...}}
 5. Frontend displays question 4 to continue
 6. User finishes quiz normally
 
-7. [Later] User calls GET /quizzes/42
-8. Backend returns {quiz_session_id: 42, status: "completed", current_score: {correct: 4, ...}}
+7. [Later] User calls GET /games/42
+8. Backend returns {game_session_id: 42, status: "completed", current_score: {correct: 4, ...}}
 9. Frontend shows "Quiz already completed, final score: 4/5"
 ```
 
-**Dependencies:** POST /quizzes, POST /quizzes/<id>/<num> (need active or completed quiz)
+**Dependencies:** POST /games, POST /games/<id>/<num> (need active or completed game)
 **Estimated complexity:** Medium
 **Why twelfth:** Quiz feature continues
 
@@ -518,7 +518,7 @@ Each endpoint is implemented in sequence with full end-to-end testing:
 5. Verify game history shows correct sessions
 ```
 
-**Dependencies:** POST /users, POST /quizzes/<id>/<num> (need user with games)
+**Dependencies:** POST /users, POST /games/<id>/<num> (need user with games)
 **Estimated complexity:** Medium
 **Why fourteenth:** User profile feature
 

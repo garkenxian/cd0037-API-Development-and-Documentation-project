@@ -315,13 +315,13 @@ Complete REST API specification for Trivia Quiz Application with 16 total endpoi
 
 ---
 
-## 3. QUIZ ENDPOINTS (Persistent Session with Answer Tracking)
+## 3. GAME ENDPOINTS (Persistent Session with Answer Tracking)
 
-### POST /quizzes
-**Description:** Create a new quiz session and return the first question
+### POST /games
+**Description:** Create a new game session and return the first question
 
 **Method:** POST
-**URL:** `/quizzes`
+**URL:** `/games`
 
 **Request Body (JSON):**
 ```json
@@ -333,16 +333,16 @@ Complete REST API specification for Trivia Quiz Application with 16 total endpoi
 ```
 
 **Required Fields:**
-- `user_id` (integer): User starting the quiz
+- `user_id` (integer): User starting the game
 - `category_id` (integer): Category ID (0 for all categories)
 
 **Optional Fields:**
-- `number_of_questions` (integer, default=5): Number of questions in quiz (1-20)
+- `number_of_questions` (integer, default=5): Number of questions in game (1-20)
 
 **Response (Success - 201):**
 ```json
 {
-  "quiz_session_id": 42,
+  "game_session_id": 42,
   "question_number": 1,
   "current_score": {
     "correct": 0,
@@ -370,17 +370,17 @@ Complete REST API specification for Trivia Quiz Application with 16 total endpoi
 
 ---
 
-### GET /quizzes/:quiz_session_id
-**Description:** Get current quiz state and next unanswered question (catch-up endpoint)
+### GET /games/:game_session_id
+**Description:** Get current game state and next unanswered question (catch-up endpoint)
 
 **Method:** GET
-**URL:** `/quizzes/<int:quiz_session_id>`
-**Example:** `/quizzes/42`
+**URL:** `/games/<int:game_session_id>`
+**Example:** `/games/42`
 
 **Response (Success - 200):**
 ```json
 {
-  "quiz_session_id": 42,
+  "game_session_id": 42,
   "question_number": 3,
   "current_score": {
     "correct": 2,
@@ -398,7 +398,7 @@ Complete REST API specification for Trivia Quiz Application with 16 total endpoi
 }
 ```
 
-**Response (Quiz Completed - 200):**
+**Response (Game Completed - 200):**
 ```json
 {
   "quiz_session_id": 42,
@@ -419,16 +419,16 @@ Complete REST API specification for Trivia Quiz Application with 16 total endpoi
 - Check quiz completion status
 
 **Errors:**
-- 404: Quiz session not found
+- 404: Game session not found
 
 ---
 
-### POST /quizzes/:quiz_session_id/:question_number
-**Description:** Answer a quiz question and get the next question
+### POST /games/:game_session_id/:question_number
+**Description:** Answer a game question and get the next question
 
 **Method:** POST
-**URL:** `/quizzes/<int:quiz_session_id>/<int:question_number>`
-**Example:** `/quizzes/42/1`
+**URL:** `/games/<int:game_session_id>/<int:question_number>`
+**Example:** `/games/42/1`
 
 **Request Body (JSON):**
 ```json
@@ -443,7 +443,7 @@ Complete REST API specification for Trivia Quiz Application with 16 total endpoi
 **Response (Answer Correct, More Questions - 200):**
 ```json
 {
-  "quiz_session_id": 42,
+  "game_session_id": 42,
   "answered_question_number": 1,
   "correct": true,
   "correct_answer": "H2O",
@@ -467,7 +467,7 @@ Complete REST API specification for Trivia Quiz Application with 16 total endpoi
 **Response (Answer Correct, Quiz Complete - 200):**
 ```json
 {
-  "quiz_session_id": 42,
+  "game_session_id": 42,
   "question_number": 5,
   "correct": true,
   "correct_answer": "Paris",
@@ -476,7 +476,7 @@ Complete REST API specification for Trivia Quiz Application with 16 total endpoi
     "total_answered": 5,
     "total_questions": 5
   },
-  "quiz_status": "completed",
+  "game_status": "completed",
   "question_number": 6,
   "question": null,
   "success": true
@@ -785,9 +785,9 @@ Complete REST API specification for Trivia Quiz Application with 16 total endpoi
 | 7 | GET | `/categories/<id>/questions` | Get questions by category | Existing |
 | 8 | POST | `/questions` | Create question | Modified |
 | 9 | DELETE | `/questions/<id>` | Delete question | Existing |
-| 10 | POST | `/quizzes` | Create quiz session, return first question | New |
-| 11 | GET | `/quizzes/<id>` | Get current quiz state (catch-up) | New |
-| 12 | POST | `/quizzes/<id>/<question_number>` | Answer question, return next | New |
+| 10 | POST | `/games` | Create game session, return first question | New |
+| 11 | GET | `/games/<id>` | Get current game state (catch-up) | New |
+| 12 | POST | `/games/<id>/<question_number>` | Answer question, return next | New |
 | 13 | POST | `/users` | Create user | New |
 | 14 | GET | `/users` | List all users | New |
 | 15 | GET | `/users/<id>` | Get user + game history | New |
@@ -799,8 +799,8 @@ Complete REST API specification for Trivia Quiz Application with 16 total endpoi
 
 ## Key Security Decisions
 
-1. **Answer Never Exposed**: POST /quizzes and GET /quizzes/<id> do NOT return an answer field
-2. **Server-Side Validation**: POST /quizzes/<quiz_session_id>/<question_number> validates all answers
+1. **Answer Never Exposed**: POST /games and GET /games/<id> do NOT return an answer field
+2. **Server-Side Validation**: POST /games/<game_session_id>/<question_number> validates all answers
 3. **Authoritative Score**: Database score is source of truth, not client state
 4. **Audit Trail**: GameSession records every quiz with score
 5. **No Authentication (Current Phase)**: Username-only, no passwords
@@ -970,7 +970,7 @@ Audit trail - each question answered in a quiz
 - ✅ Persistent audit trail (user can replay quiz)
 - ✅ Question snapshots (deleted questions don't break quiz history)
 - ✅ Complete answer tracking (for analytics, re-review)
-- ✅ Session recovery (GET /quizzes/id catches user up)
+- ✅ Session recovery (GET /games/id catches user up)
 - ✅ No duplicate answers (can't re-answer same question)
 
 ---
@@ -985,4 +985,4 @@ Audit trail - each question answered in a quiz
 - Score format: `{correct: int, total_answered: int, total_questions: int}` (UI calculates percentage)
 - Auto-completion: When user answers question_number = total_questions, quiz marked complete + User stats updated
 - Concurrent quizzes: User can have multiple active quiz_sessions
-- Quiz recovery: GET /quizzes/id always returns next unanswered question or completion status
+- Game recovery: GET /games/id always returns next unanswered question or completion status
