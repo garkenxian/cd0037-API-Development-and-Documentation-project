@@ -464,11 +464,11 @@ Complete REST API specification for Trivia Quiz Application with 16 total endpoi
 }
 ```
 
-**Response (Answer Correct, Quiz Complete - 200):**
+**Response (Answer Correct, Game Complete - 200):**
 ```json
 {
   "game_session_id": 42,
-  "question_number": 5,
+  "answered_question_number": 5,
   "correct": true,
   "correct_answer": "Paris",
   "current_score": {
@@ -476,8 +476,8 @@ Complete REST API specification for Trivia Quiz Application with 16 total endpoi
     "total_answered": 5,
     "total_questions": 5
   },
-  "game_status": "completed",
-  "question_number": 6,
+  "status": "completed",
+  "next_question_number": null,
   "question": null,
   "success": true
 }
@@ -487,7 +487,7 @@ Complete REST API specification for Trivia Quiz Application with 16 total endpoi
 ```json
 {
   "game_session_id": 42,
-  "question_number": 2,
+  "answered_question_number": 2,
   "correct": false,
   "correct_answer": "Paris",
   "current_score": {
@@ -495,7 +495,7 @@ Complete REST API specification for Trivia Quiz Application with 16 total endpoi
     "total_answered": 2,
     "total_questions": 5
   },
-  "question_number": 3,
+  "next_question_number": 3,
   "question": {
     "id": 22,
     "question": "What is 2+2?",

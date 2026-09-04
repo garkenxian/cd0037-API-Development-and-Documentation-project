@@ -633,11 +633,25 @@ class GamesEndpointUnitTests(unittest.TestCase):
             class AnswerStub(StubGameSessionAnswerService):
                 @staticmethod
                 def get_by_game_and_question_number(game_session_id, question_number):
-                    mock_record = MagicMock()
-                    mock_record.is_already_answered.return_value = False
-                    mock_record.correct_answer = 'Test Answer'
-                    mock_record.record_user_answer = MagicMock()
-                    return mock_record
+                    if question_number == 1:
+                        # Current question (being answered)
+                        mock_record = MagicMock()
+                        mock_record.is_already_answered.return_value = False
+                        mock_record.correct_answer = 'Test Answer'
+                        mock_record.record_user_answer = MagicMock()
+                        return mock_record
+                    elif question_number == 2:
+                        # Next question exists
+                        mock_next = MagicMock()
+                        mock_next.get_question_format.return_value = {
+                            'id': 2,
+                            'question': 'Next Question?',
+                            'category': 1,
+                            'difficulty': 2,
+                            'rating': 4.0
+                        }
+                        return mock_next
+                    return None
                 
                 @staticmethod
                 def get_correct_count(game_session_id):
@@ -660,7 +674,9 @@ class GamesEndpointUnitTests(unittest.TestCase):
             data = response.get_json()
             self.assertTrue(data['success'])
             self.assertTrue(data['correct'])  # Correct answer
-            self.assertEqual(data['question_number'], 1)
+            self.assertEqual(data['answered_question_number'], 1)
+            self.assertEqual(data['next_question_number'], 2)
+            self.assertIn('question', data)
         finally:
             controllers.games.PHASE_1B_AVAILABLE = original_phase_1b
             if original_service:
@@ -692,15 +708,33 @@ class GamesEndpointUnitTests(unittest.TestCase):
             class AnswerStub(StubGameSessionAnswerService):
                 @staticmethod
                 def get_by_game_and_question_number(game_session_id, question_number):
-                    mock_record = MagicMock()
-                    mock_record.is_already_answered.return_value = False
-                    mock_record.correct_answer = 'Correct Answer'
-                    mock_record.record_user_answer = MagicMock()
-                    return mock_record
+                    if question_number == 1:
+                        # Current question (being answered)
+                        mock_record = MagicMock()
+                        mock_record.is_already_answered.return_value = False
+                        mock_record.correct_answer = 'Correct Answer'
+                        mock_record.record_user_answer = MagicMock()
+                        return mock_record
+                    elif question_number == 2:
+                        # Next question exists
+                        mock_next = MagicMock()
+                        mock_next.get_question_format.return_value = {
+                            'id': 3,
+                            'question': 'Next Question?',
+                            'category': 1,
+                            'difficulty': 2,
+                            'rating': 4.0
+                        }
+                        return mock_next
+                    return None
                 
                 @staticmethod
                 def get_correct_count(game_session_id):
                     return 0  # No correct answers yet
+                
+                @staticmethod
+                def get_total_questions(game_session_id):
+                    return 5
             
             controllers.games.PHASE_1B_AVAILABLE = True
             controllers.games.GameSessionAnswerService = AnswerStub
@@ -716,6 +750,8 @@ class GamesEndpointUnitTests(unittest.TestCase):
             self.assertTrue(data['success'])
             self.assertFalse(data['correct'])  # Incorrect answer
             self.assertEqual(data['correct_answer'], 'Correct Answer')
+            self.assertEqual(data['answered_question_number'], 1)
+            self.assertEqual(data['next_question_number'], 2)
         finally:
             controllers.games.PHASE_1B_AVAILABLE = original_phase_1b
             if original_service:

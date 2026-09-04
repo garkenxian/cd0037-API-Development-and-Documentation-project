@@ -8,7 +8,7 @@ from . import db
 class GameSession(db.Model):
     """
     GameSession model for tracking individual quiz game results
-    Pure ORM definition - no business logic
+    Use GameSessionRepository and GameSessionService for persistence operations.
     """
     __tablename__ = 'game_sessions'
 
@@ -26,16 +26,16 @@ class GameSession(db.Model):
         self.number_of_questions = number_of_questions
 
     def insert(self):
-        """Insert this game session into the database"""
+        """DEPRECATED: Use GameSessionRepository.create() instead"""
         db.session.add(self)
         db.session.commit()
 
     def update(self):
-        """Update this game session in the database"""
+        """DEPRECATED: Use GameSessionRepository.update() instead"""
         db.session.commit()
 
     def delete(self):
-        """Delete this game session from the database"""
+        """DEPRECATED: Use GameSessionRepository.delete() instead"""
         db.session.delete(self)
         db.session.commit()
 

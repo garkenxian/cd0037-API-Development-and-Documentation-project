@@ -112,9 +112,14 @@ def create_game():
         }), 201
     except ValueError as e:
         error_msg = str(e).lower()
-        if 'not found' in error_msg or 'not available' in error_msg:
+        if 'not found' in error_msg:
+            # Resource (user/category) not found
             abort(404)
+        elif 'not available' in error_msg:
+            # No questions available - valid request but can't be fulfilled (422)
+            abort(422)
         else:
+            # Other validation errors
             abort(422)
     except Exception as e:
         abort(500)
@@ -251,9 +256,18 @@ def answer_question(game_session_id, question_number):
             game_session = GameSessionService.update_game_session(
                 game_session_id, score=game_session.score + 10
             )
-        return jsonify({
+        
+        # Determine next question
+        next_question_number = question_number + 1
+        next_answer_record = GameSessionAnswerService.get_by_game_and_question_number(
+            game_session_id=game_session_id,
+            question_number=next_question_number
+        )
+        
+        # Build response with answered_question_number and next_question_number for clarity
+        response = {
             'game_session_id': game_session.id,
-            'question_number': question_number,
+            'answered_question_number': question_number,
             'correct': is_correct,
             'correct_answer': answer_record.correct_answer,
             'current_score': {
@@ -262,7 +276,19 @@ def answer_question(game_session_id, question_number):
                 'total_questions': GameSessionAnswerService.get_total_questions(game_session_id)
             },
             'success': True
-        }), 200
+        }
+        
+        # Add next question info if available
+        if next_answer_record:
+            response['next_question_number'] = next_question_number
+            response['question'] = next_answer_record.get_question_format()
+        else:
+            # Game is complete
+            response['status'] = 'completed'
+            response['next_question_number'] = None
+            response['question'] = None
+        
+        return jsonify(response), 200
     except HTTPException:
         # Re-raise HTTPException (from abort()) so it propagates correctly
         raise
