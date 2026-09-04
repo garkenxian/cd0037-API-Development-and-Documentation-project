@@ -238,11 +238,11 @@ def answer_question(game_session_id, question_number):
             is_correct=is_correct
         )
         
-        # Update game session score if correct
+        # Update game session score if correct (transaction managed by service layer)
         if is_correct:
-            game_session.score += 10  # Award 10 points per correct answer
-            game_session.update()
-        
+            game_session = GameSessionService.update_game_session(
+                game_session_id, score=game_session.score + 10
+            )
         return jsonify({
             'game_session_id': game_session.id,
             'question_number': question_number,
