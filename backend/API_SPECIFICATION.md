@@ -799,8 +799,8 @@ Complete REST API specification for Trivia Quiz Application with 16 total endpoi
 
 ## Key Security Decisions
 
-1. **Answer Never Exposed**: GET /quizzes does NOT return answer field
-2. **Server-Side Validation**: POST /quiz-answer validates all answers
+1. **Answer Never Exposed**: POST /quizzes and GET /quizzes/<id> do NOT return an answer field
+2. **Server-Side Validation**: POST /quizzes/<quiz_session_id>/<question_number> validates all answers
 3. **Authoritative Score**: Database score is source of truth, not client state
 4. **Audit Trail**: GameSession records every quiz with score
 5. **No Authentication (Current Phase)**: Username-only, no passwords
