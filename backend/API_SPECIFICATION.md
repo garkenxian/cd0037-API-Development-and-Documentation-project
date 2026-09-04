@@ -420,7 +420,6 @@ Complete REST API specification for Trivia Quiz Application with 16 total endpoi
 
 **Errors:**
 - 404: Quiz session not found
-- 422: Quiz session already completed
 
 ---
 
