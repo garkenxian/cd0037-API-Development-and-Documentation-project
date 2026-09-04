@@ -8,12 +8,13 @@ class GameSessionRepository:
     """Repository for GameSession model"""
 
     @staticmethod
-    def create(user_id, score, category_id=None):
+    def create(user_id, score, category_id=None, number_of_questions=5):
         """Create a new game session (no commit)"""
         session = GameSession(
             user_id=user_id,
             score=score,
-            category_id=category_id
+            category_id=category_id,
+            number_of_questions=number_of_questions
         )
         db.session.add(session)
         return session

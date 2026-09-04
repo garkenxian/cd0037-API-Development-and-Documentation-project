@@ -57,11 +57,12 @@ def create_game():
         if not isinstance(number_of_questions, int) or number_of_questions < 1 or number_of_questions > 20:
             raise ValueError("number_of_questions must be between 1 and 20")
 
-        # Create game session with initial score 0
+        # Create game session with initial score 0 and number of questions
         game_session = GameSessionService.create_game_session(
             user_id=user_id,
             score=0,
-            category_id=normalized_category_id
+            category_id=category_id,
+            number_of_questions=number_of_questions
         )
 
         # Get first question - use random selection for variety

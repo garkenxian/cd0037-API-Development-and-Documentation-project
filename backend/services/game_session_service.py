@@ -10,7 +10,7 @@ class GameSessionService:
     """Service layer for game session operations"""
 
     @staticmethod
-    def create_game_session(user_id, score, category_id=None):
+    def create_game_session(user_id, score, category_id=None, number_of_questions=5):
         """
         Create a new game session
         
@@ -18,6 +18,7 @@ class GameSessionService:
             user_id: User ID (must exist)
             score: Score earned in game
             category_id: Optional category ID
+            number_of_questions: Total questions in this game session (default 5, max 20)
             
         Returns:
             Created game session object
@@ -32,8 +33,11 @@ class GameSessionService:
         if score is None or score < 0:
             raise ValueError("Score must be a non-negative number")
         
+        if not isinstance(number_of_questions, int) or number_of_questions < 1 or number_of_questions > 20:
+            raise ValueError("number_of_questions must be between 1 and 20")
+        
         # Create via repository (no commit yet)
-        session = GameSessionRepository.create(user_id, score, category_id)
+        session = GameSessionRepository.create(user_id, score, category_id, number_of_questions)
         
         # Transaction boundary - commit here
         try:

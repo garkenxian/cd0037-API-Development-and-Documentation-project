@@ -320,20 +320,20 @@ class GamesEndpointUnitTests(unittest.TestCase):
         """Test game creation with category_id=0 (selects from all categories)"""
         user, _, _ = self._create_test_data()
         
-        # category_id=0 should be treated like None, but the code checks "not None"
-        # so it tries to get random question by category 0 which fails
-        # This is expected behavior - category_id=0 is not the same as None in current implementation
+        # category_id=0 is treated like None in the endpoint
+        # The code checks: if category_id is not None and category_id != 0
+        # So 0 skips validation and succeeds
         response = self.client.post(
             '/games',
             json={
                 'user_id': user.id,
-                'category_id': 0,  # 0 is not None, so endpoint tries to query category 0
+                'category_id': 0,  # 0 means "all categories" and should succeed
                 'number_of_questions': 5
             }
         )
         
-        # Will fail because category 0 doesn't exist
-        self.assertEqual(response.status_code, 422)
+        # Should succeed because category_id=0 is special-cased to mean "all categories"
+        self.assertEqual(response.status_code, 201)
 
     def test_create_game_no_category_provided(self):
         """Test game creation without category_id (defaults to all categories)"""

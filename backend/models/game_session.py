@@ -16,12 +16,14 @@ class GameSession(db.Model):
     user_id = Column(Integer, ForeignKey('users.id'), nullable=False)
     score = Column(Integer, nullable=False)
     category_id = Column(Integer, ForeignKey('categories.id'), nullable=True)
+    number_of_questions = Column(Integer, nullable=False, default=5)
     date_played = Column(DateTime, default=lambda: datetime.now(timezone.utc), nullable=False)
 
-    def __init__(self, user_id, score, category_id=None):
+    def __init__(self, user_id, score, category_id=None, number_of_questions=5):
         self.user_id = user_id
         self.score = score
         self.category_id = category_id
+        self.number_of_questions = number_of_questions
 
     def insert(self):
         """Insert this game session into the database"""
@@ -44,6 +46,7 @@ class GameSession(db.Model):
             'user_id': self.user_id,
             'score': self.score,
             'category_id': self.category_id,
+            'number_of_questions': self.number_of_questions,
             'date_played': self.date_played.isoformat()
         }
 

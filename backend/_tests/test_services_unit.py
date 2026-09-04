@@ -711,7 +711,7 @@ class GameSessionServiceUnitTests(unittest.TestCase):
         
         result = GameSessionService.create_game_session(1, 100, 1)
         
-        mock_repo.create.assert_called_once_with(1, 100, 1)
+        mock_repo.create.assert_called_once_with(1, 100, 1, 5)  # Now includes number_of_questions default
         mock_db.session.commit.assert_called_once()
         self.assertEqual(result, mock_session)
 
