@@ -103,7 +103,7 @@ def create_game():
                 'category': first_question.category,
                 'difficulty': first_question.difficulty,
                 'rating': first_question.rating
-            }
+            },
             'success': True
         }), 201
     except ValueError as e:
