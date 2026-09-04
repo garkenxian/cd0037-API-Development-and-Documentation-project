@@ -444,7 +444,7 @@ Complete REST API specification for Trivia Quiz Application with 16 total endpoi
 ```json
 {
   "quiz_session_id": 42,
-  "question_number": 1,
+  "answered_question_number": 1,
   "correct": true,
   "correct_answer": "H2O",
   "current_score": {
@@ -452,7 +452,7 @@ Complete REST API specification for Trivia Quiz Application with 16 total endpoi
     "total_answered": 1,
     "total_questions": 5
   },
-  "question_number": 2,
+  "next_question_number": 2,
   "question": {
     "id": 15,
     "question": "What is the capital of France?",
