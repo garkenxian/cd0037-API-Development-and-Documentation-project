@@ -8,5 +8,6 @@ from .user_service import UserService
 from .category_service import CategoryService
 from .question_service import QuestionService
 from .game_session_service import GameSessionService
+from .game_session_answer_service import GameSessionAnswerService
 
-__all__ = ['UserService', 'CategoryService', 'QuestionService', 'GameSessionService']
+__all__ = ['UserService', 'CategoryService', 'QuestionService', 'GameSessionService', 'GameSessionAnswerService']

@@ -57,6 +57,22 @@ class QuestionRepository:
         db.session.delete(question)
 
     @staticmethod
+    def count_all(exclude_ids=None):
+        """Count total questions in database, optionally excluding some IDs"""
+        query = Question.query
+        if exclude_ids:
+            query = query.filter(~Question.id.in_(exclude_ids))
+        return query.count()
+
+    @staticmethod
+    def count_by_category(category_id, exclude_ids=None):
+        """Count questions in a category, optionally excluding some IDs"""
+        query = Question.query.filter_by(category=category_id)
+        if exclude_ids:
+            query = query.filter(~Question.id.in_(exclude_ids))
+        return query.count()
+
+    @staticmethod
     def get_random_by_category(category_id, exclude_ids=None):
         """Get a random question from a category"""
         import random

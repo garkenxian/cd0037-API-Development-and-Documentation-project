@@ -66,12 +66,64 @@ Keep each task narrow and verifiable:
 4. Each run must end with: tests run, coverage check, docs updated if behavior changed.
 5. At the end of each phase, re-evaluate all remaining phases and adjust future tasks/ordering based on what changed.
 
+## Code Review Rules For Mini-Model Runs
+These rules keep reviews practical for a school assignment while still improving quality.
+
+1. Assignment-first pragmatism:
+   - Prioritize rubric alignment, endpoint correctness, test reliability, and phase exit criteria.
+   - Treat "must fix" as issues that break contracts, correctness, tests, security basics, or required coverage.
+   - Treat polish/perfection items as "recommended" unless they block a current-phase requirement.
+   - Do not block progress on enterprise-grade refinements that are outside assignment scope.
+
+2. Progress over perfection:
+   - Reviews should help the team ship the current phase safely, not redesign unrelated architecture.
+   - Prefer the smallest safe fix that satisfies current requirements and preserves momentum.
+   - Limit scope creep: if a suggestion belongs to a later phase, capture it as follow-up rather than a blocker.
+
+3. Phase-aware review decisions:
+   - Evaluate findings against Delivery Order and current phase goals before labeling severity.
+   - If a concern is primarily a future-phase item, tag it as deferred with the target phase.
+   - Only elevate deferred items to blockers when they create immediate correctness/security/contract risk now.
+
+4. Future-work integration requirement:
+   - Every review pass must check downstream impact using this plan's remaining phases.
+   - For each major finding, state one of: fix now, defer to named phase, or out-of-scope.
+   - If implementation choices change assumptions, update the relevant backlog/checklist so future phases stay accurate.
+
+5. Review output format standard:
+   - Findings first, ordered by severity.
+   - Each finding includes: why it matters now, whether it blocks this phase, and recommended next action.
+   - End with a short "deferred follow-ups" list mapped to future phases.
+
 ## Phase Exit Revalidation Rule (Applies To Every Phase)
 Before closing any phase as done:
 1. Re-check API spec, plan, and backlog for downstream impact from the completed work.
 2. Update remaining phase tasks, entry criteria, and definitions of done if assumptions changed.
 3. Record any scope/order changes in the Decision Log or Spec-to-Implementation Alignment Backlog.
 4. Confirm the next phase is still valid before starting implementation.
+
+## End-of-Phase-2 Revalidation Update (2026-09-05)
+This section captures downstream planning updates after completing Phase 2 work.
+
+1. Phase status snapshot:
+   - Phase 1 is complete and no longer the active blocker.
+   - Phase 2 contract normalization is complete enough to move forward, with documentation consistency to be finalized in Phase 7.
+
+2. What changed for future phases:
+   - Game flow sequencing, determinism, and completion idempotency moved from "core implementation" to "regression protection" scope.
+   - Deprecated SQL bootstrap files are now archival/reference only; SQLAlchemy flow is canonical for setup.
+   - Error semantics now include conflict-style session state handling in game flow, which Phase 7 docs must reflect consistently.
+
+3. Updated priorities for remaining phases:
+   - Phase 3 remains next and should focus on per-file backend coverage gaps and missing edge-path tests, not large behavior redesign.
+   - Phase 4 can proceed once Phase 3 finishes, using current games contract (`POST /games`, `POST /games/<id>/<question_number>`, `GET /games/<id>`).
+   - Phase 5 remains required because frontend per-file coverage is still below the project hard constraint.
+   - Phases 6-8 remain valid with no ordering change.
+
+4. Assignment-scope guardrails (reconfirmed):
+   - Keep improvements pragmatic and rubric-aligned.
+   - Prefer small, test-backed fixes over architecture expansion.
+   - Defer non-essential perfection work unless it blocks current phase exit criteria.
 
 ## Phased Plan
 
@@ -368,9 +420,9 @@ These appear temporary, superseded, or PR-specific:
    - Apply only contract-alignment changes required by endpoint redesign.
 
 ## Immediate Next 3 Executable Tasks
-1. Build Phase 1 model/repo/service for deterministic game answers and integrate into all 3 game endpoints.
-2. Add/adjust tests for game sequence, duplicate answer rejection, completion idempotency, and resume state.
-3. Fix backend per-file coverage failure in `controllers/questions.py` and verify per-file 80% manually in local checks.
+1. Execute Phase 3 coverage closure for backend files still below 80%, starting with `controllers/questions.py` and remaining low edge paths.
+2. Add/adjust tests that lock in Phase 1 and Phase 2 contracts (sequence, conflict behavior, standardized error payloads) to prevent regressions.
+3. Prepare Phase 4 frontend contract migration task pack to remove legacy `/quizzes` usage and align search with `GET /questions?search=...`.
 
 ## Spec-to-Implementation Alignment Backlog (v1.0 Contract)
 Use this checklist to bring runtime behavior in line with `backend/API_SPECIFICATION.md`.
@@ -400,10 +452,11 @@ Use this checklist to bring runtime behavior in line with `backend/API_SPECIFICA
    - Ensure category-filtered question listing returns 200 with empty list when category exists but has no questions.
 
 3. Games contract updates (highest priority)
-   - Implement deterministic question assignment and answer validation using `game_session_answer`.
-   - Remove any random-question scoring path from answer submission.
-   - Enforce ordered answering and duplicate-submit rejection.
-   - Keep score semantics as `correct_count` only.
+   - [DONE] Deterministic question assignment and answer validation using `game_session_answer` implemented.
+   - [DONE] Random-question scoring path removed from answer submission.
+   - [DONE] Ordered answering and duplicate-submit rejection enforced.
+   - [DONE] Score semantics kept as `correct_count` only.
+   - Follow-up for Phase 7: ensure API spec examples and error semantics fully reflect implemented game-state conflict handling.
 
 4. Users contract updates
    - Align leaderboard route to `GET /users/leaderboard`.

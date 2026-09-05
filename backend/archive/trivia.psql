@@ -123,7 +123,10 @@ CREATE TABLE game_sessions (
     user_id integer NOT NULL,
     score integer NOT NULL,
     category_id integer,
-    date_played timestamp without time zone DEFAULT CURRENT_TIMESTAMP NOT NULL
+    number_of_questions integer DEFAULT 5 NOT NULL,
+    date_played timestamp with time zone DEFAULT CURRENT_TIMESTAMP NOT NULL,
+    is_completed boolean DEFAULT false NOT NULL,
+    awarded_score integer
 );
 ALTER TABLE game_sessions OWNER TO postgres;
 
@@ -272,10 +275,46 @@ COPY users (id, username, email, total_score, games_played, created_at) FROM std
 \.
 
 --
+-- Name: game_session_answers; Type: TABLE; Schema: public; Owner: postgres
+--
+
+CREATE TABLE game_session_answers (
+    id integer NOT NULL,
+    game_session_id integer NOT NULL,
+    question_number integer NOT NULL,
+    question_id integer NOT NULL,
+    question_snapshot character varying NOT NULL,
+    answer_snapshot character varying NOT NULL,
+    user_answer character varying NOT NULL,
+    is_correct boolean NOT NULL,
+    created_at timestamp with time zone DEFAULT CURRENT_TIMESTAMP NOT NULL,
+    CONSTRAINT uq_game_question_number UNIQUE (game_session_id, question_number)
+);
+ALTER TABLE game_session_answers OWNER TO postgres;
+
+--
+-- Name: game_session_answers_id_seq; Type: SEQUENCE; Schema: public; Owner: postgres
+--
+
+CREATE SEQUENCE game_session_answers_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+ALTER TABLE game_session_answers_id_seq OWNER TO postgres;
+
+--
+-- Name: game_session_answers_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: postgres
+--
+
+ALTER SEQUENCE game_session_answers_id_seq OWNED BY game_session_answers.id;
+
+--
 -- Data for Name: game_sessions; Type: TABLE DATA; Schema: public; Owner: postgres
 --
 
-COPY game_sessions (id, user_id, score, category_id, date_played) FROM stdin;
+COPY game_sessions (id, user_id, score, category_id, number_of_questions, date_played, is_completed, awarded_score) FROM stdin;
 \.
 
 --
@@ -301,3 +340,43 @@ SELECT pg_catalog.setval('users_id_seq', 1, false);
 --
 
 SELECT pg_catalog.setval('game_sessions_id_seq', 1, false);
+
+--
+-- Data for Name: game_session_answers; Type: TABLE DATA; Schema: public; Owner: postgres
+--
+
+COPY game_session_answers (id, game_session_id, question_number, question_id, question_snapshot, answer_snapshot, user_answer, is_correct, created_at) FROM stdin;
+\.
+
+--
+-- Name: game_session_answers_id_seq; Type: SEQUENCE SET; Schema: public; Owner: postgres
+--
+
+SELECT pg_catalog.setval('game_session_answers_id_seq', 1, false);
+
+--
+-- Name: game_session_answers id; Type: DEFAULT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY game_session_answers ALTER COLUMN id SET DEFAULT nextval('game_session_answers_id_seq'::regclass);
+
+--
+-- Name: game_session_answers game_session_answers_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY game_session_answers
+    ADD CONSTRAINT game_session_answers_pkey PRIMARY KEY (id);
+
+--
+-- Name: game_session_answers game_session_answers_game_session_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY game_session_answers
+    ADD CONSTRAINT game_session_answers_game_session_id_fkey FOREIGN KEY (game_session_id) REFERENCES game_sessions(id) ON DELETE CASCADE;
+
+--
+-- Name: game_session_answers game_session_answers_question_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY game_session_answers
+    ADD CONSTRAINT game_session_answers_question_id_fkey FOREIGN KEY (question_id) REFERENCES questions(id) ON DELETE RESTRICT;

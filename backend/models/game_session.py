@@ -1,7 +1,7 @@
 """GameSession model - Pure ORM definition"""
 
 from datetime import datetime, timezone
-from sqlalchemy import Column, Integer, ForeignKey, DateTime
+from sqlalchemy import Column, Integer, ForeignKey, DateTime, Boolean
 from . import db
 
 
@@ -18,12 +18,16 @@ class GameSession(db.Model):
     category_id = Column(Integer, ForeignKey('categories.id'), nullable=True)
     number_of_questions = Column(Integer, nullable=False, default=5)
     date_played = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc), nullable=False)
+    is_completed = Column(Boolean, nullable=False, default=False)  # Idempotency guard for completion
+    awarded_score = Column(Integer, nullable=True)  # Score when completion was marked (for audit)
 
     def __init__(self, user_id, score, category_id=None, number_of_questions=5):
         self.user_id = user_id
         self.score = score
         self.category_id = category_id
         self.number_of_questions = number_of_questions
+        self.is_completed = False
+        self.awarded_score = None
 
     def format(self):
         """Return formatted game session as dictionary"""

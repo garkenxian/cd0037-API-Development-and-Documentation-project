@@ -212,8 +212,13 @@ GAME_SESSIONS_DATA = [
 backend/_helpers/
 ├── db_init.py      ← Main initialization script
 ├── db_seed.py      ← Seed data definitions and logic
-└── trivia.psql     ← Legacy PostgreSQL dump (deprecated)
+└── archive/        ← Deprecated files (do not use)
+    ├── trivia.psql
+    ├── trivia_helpers.psql
+    └── README.md
 ```
+
+**⚠️ IMPORTANT**: The `trivia.psql` files have been moved to `archive/` and are deprecated. Use the SQLAlchemy-based setup below.
 
 ### db_init.py
 
@@ -276,9 +281,27 @@ For manual API testing (e.g., with Postman/curl):
 
 ---
 
-## Migration from Legacy System
+## ⚠️ Legacy Database Setup (Deprecated)
 
-The old `trivia.psql` PostgreSQL dump is now deprecated. To migrate existing data:
+The old `trivia.psql` PostgreSQL dump is **no longer used** and has been archived to `_helpers/archive/`. 
+
+### ❌ DO NOT USE: `psql trivia < trivia.psql`
+
+This approach is deprecated because:
+- Not compatible with SQLite (used in development)
+- Schema is not version-controlled alongside code
+- No automatic migration path
+- Difficult to maintain across platforms
+
+### ✅ DO USE: SQLAlchemy-based setup
+
+All database operations now use SQLAlchemy ORM:
+1. Tables defined in `backend/models/` (Python classes)
+2. Schema automatically created by `db_init.py`
+3. Seed data defined in `db_seed.py`
+4. Works seamlessly with SQLite, PostgreSQL, MySQL, etc.
+
+To migrate existing data from old PostgreSQL database:
 
 1. Export data from PostgreSQL
 2. Transform to match the new ORM models

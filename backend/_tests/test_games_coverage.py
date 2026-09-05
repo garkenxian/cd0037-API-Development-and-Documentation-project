@@ -6,6 +6,7 @@ from flaskr import create_app
 from data_access import db
 from data_access.user_repository import UserRepository
 from data_access.category_repository import CategoryRepository
+from data_access.question_repository import QuestionRepository
 
 
 class GamesErrorHandlingTests(unittest.TestCase):
@@ -31,6 +32,13 @@ class GamesErrorHandlingTests(unittest.TestCase):
         # Create test data
         self.user = UserRepository.create('testuser', None)
         self.cat1 = CategoryRepository.create('Science')
+        db.session.flush()
+        # Create at least 5 questions for tests requesting 5-question games
+        self.q1 = QuestionRepository.create('Test Q1?', 'Water', self.cat1.id, 'easy')
+        self.q2 = QuestionRepository.create('Test Q2?', 'Earth', self.cat1.id, 'medium')
+        self.q3 = QuestionRepository.create('Test Q3?', 'Fire', self.cat1.id, 'hard')
+        self.q4 = QuestionRepository.create('Test Q4?', 'Air', self.cat1.id, 'easy')
+        self.q5 = QuestionRepository.create('Test Q5?', 'Ether', self.cat1.id, 'medium')
         db.session.commit()
 
     def tearDown(self):
@@ -253,7 +261,7 @@ class GamesErrorHandlingTests(unittest.TestCase):
         response = self.client.post(f'/games/{game_id}/0', json={
             'user_answer': 'answer'
         })
-        self.assertEqual(response.status_code, 400)
+        self.assertEqual(response.status_code, 422)
 
     def test_answer_question_question_number_too_high(self):
         """Test POST answer with question number beyond game length"""
@@ -268,7 +276,7 @@ class GamesErrorHandlingTests(unittest.TestCase):
         response = self.client.post(f'/games/{game_id}/10', json={
             'user_answer': 'answer'
         })
-        self.assertEqual(response.status_code, 400)
+        self.assertEqual(response.status_code, 422)
 
 
 class GamesServiceExceptionTests(unittest.TestCase):
