@@ -294,7 +294,7 @@ def answer_question(game_session_id, question_number):
     except HTTPException:
         # Re-raise HTTPException (from abort()) so it propagates correctly
         raise
-    except ValueError:
-        abort(404)
-    except Exception:
+    except ValueError as e:
+        if 'not found' in str(e).lower():
+            abort(404)
         abort(500)
