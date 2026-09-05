@@ -8,7 +8,7 @@ from services import GameSessionService, UserService, CategoryService, QuestionS
 # This service ensures questions are tracked and validated deterministically
 # TODO: Implement GameSessionAnswerService once Phase 1b model/repository are complete
 try:
-    from services import GameSessionAnswerService
+    from services.game_session_answer_service import GameSessionAnswerService
     PHASE_1B_AVAILABLE = True
 except ImportError:
     PHASE_1B_AVAILABLE = False
