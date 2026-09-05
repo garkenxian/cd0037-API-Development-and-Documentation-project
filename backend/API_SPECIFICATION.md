@@ -528,6 +528,7 @@ Complete REST API specification for Trivia Quiz Application with 16 total endpoi
 - 422: Quiz already completed
 - 422: Question already answered (re-answer attempt)
 - 422: Invalid question_number (expected question X, got Y)
+- 501: Not Implemented - Phase 1b (game_session_answer audit table) not available. This endpoint requires the Phase 1b layer to function correctly and prevent nondeterministic scoring bugs. It will return 501 until Phase 1b is implemented.
 
 ---
 
