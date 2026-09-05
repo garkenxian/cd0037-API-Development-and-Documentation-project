@@ -1,7 +1,7 @@
 # React Component Changes for New API Design
 
 ## Overview
-The React frontend must be updated to work with the new persistent quiz session architecture. This document outlines required changes to each component.
+The React frontend must be updated to work with the new persistent game session architecture. This document outlines required changes to each component.
 
 ---
 
@@ -25,7 +25,7 @@ The React frontend must be updated to work with the new persistent quiz session 
 ### Current State
 - Routes between QuestionView, FormView, QuizView, Search
 - No user context
-- No user selection before quiz
+- No user selection before game
 
 ### Changes Needed
 
@@ -84,8 +84,8 @@ const [feedback, setFeedback] = useState(null); // correct/incorrect + answer
 #### Phase 1: Category Selection
 ```javascript
 selectCategory = ({ type, id = 0 }) => {
-  // Call POST /quizzes
-  POST /quizzes {
+  // Call POST /games
+  POST /games {
     user_id: currentUser.id,
     category_id: id,
     number_of_questions: 5
@@ -100,8 +100,8 @@ selectCategory = ({ type, id = 0 }) => {
 submitGuess = (event) => {
   event.preventDefault();
   
-  // POST /quizzes/{quiz_session_id}/{question_number}
-  POST /quizzes/42/1 {
+  // POST /games/{game_session_id}/{question_number}
+  POST /games/42/1 {
     user_answer: userAnswer
   }
   
@@ -122,7 +122,7 @@ submitGuess = (event) => {
 #### Phase 4: Recovery/Catch-Up (Optional)
 ```javascript
 // On mount or if connection lost
-GET /quizzes/42
+GET /games/42
 // Returns current state + next unanswered question
 // Allow user to continue from where they left off
 ```
@@ -132,14 +132,14 @@ GET /quizzes/42
 - ❌ Remove showing answer in UI during quiz
 - ✅ Show feedback after server validation
 - ✅ Server-side score is authoritative (use from API response)
-- ✅ Session-based quiz (quiz_session_id persisted)
-- ✅ Connection recovery (GET /quizzes/<id> if needed)
+- Session-based game (game_session_id persisted)
+- Connection recovery (GET /games/<id> if needed)
 
 ### API Calls
 - GET /categories (on mount)
-- POST /quizzes (start quiz)
-- POST /quizzes/<id>/<num> (answer question, loop)
-- GET /quizzes/<id> (optional: catch-up)
+- POST /games (start game)
+- POST /games/<id>/<num> (answer question, loop)
+- GET /games/<id> (optional: catch-up)
 
 ---
 
@@ -423,9 +423,9 @@ function App() {
 - GET /categories (QuizView.js - already doing this)
 
 ### Quiz
-- POST /quizzes (QuizView.js - create session)
-- POST /quizzes/<id>/<num> (QuizView.js - answer question)
-- GET /quizzes/<id> (QuizView.js - optional catch-up)
+- POST /games (QuizView.js - create session)
+- POST /games/<id>/<num> (QuizView.js - answer question)
+- GET /games/<id> (QuizView.js - optional catch-up)
 
 ### Leaderboard
 - GET /leaderboard (Leaderboard.js)
@@ -442,9 +442,9 @@ function App() {
 
 ### QuizView Component Tests
 1. ✅ Renders user selection before quiz
-2. ✅ POST /quizzes creates session and displays first question
+2. ✅ POST /games creates session and displays first question
 3. ✅ Question does NOT show answer
-4. ✅ POST /quizzes/<quiz_session_id>/<question_number> validates and shows feedback
+4. ✅ POST /games/<game_session_id>/<question_number> validates and shows feedback
 5. ✅ Quiz completes when final question answered
 6. ✅ Score calculated correctly from API response
 
@@ -497,7 +497,7 @@ function App() {
 | Answer visibility | Visible on page | Hidden until after submit | Cheating prevention |
 | Score tracking | React state | Server authoritative | Trust/validation |
 | User selection | None | Required before quiz | Game identity |
-| Quiz recovery | Not possible | GET /quizzes/<id> | Connection resilience |
+| Game recovery | Not possible | GET /games/<id> | Connection resilience |
 | Answer feedback | Instant (local check) | After server validation | Slight latency increase |
 | Quiz sessions | Ephemeral | Persistent + auditable | Better tracking |
 

@@ -1,0 +1,30 @@
+[run]
+source = .
+omit =
+    */tests/*
+    */test_*.py
+    */__pycache__/*
+    */venv/*
+    */site-packages/*
+    setup.py
+    conftest.py
+
+[report]
+# Exclude certain lines from coverage
+exclude_lines =
+    pragma: no cover
+    def __repr__
+    raise AssertionError
+    raise NotImplementedError
+    if __name__ == .__main__.:
+    if TYPE_CHECKING:
+    @abstractmethod
+    @abstractproperty
+    if 0:
+    if False:
+
+# Set the precision for coverage percentages
+precision = 2
+
+[html]
+directory = htmlcov

@@ -1,12 +1,24 @@
 """
 Database seeding script for populating initial test data.
 
-This script adds sample questions and categories to the trivia database.
-Run after creating/resetting the database: python _helpers/db_seed.py
+This script adds sample questions, categories, users, and game sessions to the database.
+Run after creating/resetting the database: python _helpers/db_init.py --seed
+Or run directly: python _helpers/db_seed.py
+
+Usage:
+    # Initialize and seed all at once
+    python _helpers/db_init.py --seed
+    
+    # Or reset and seed from scratch
+    python _helpers/db_init.py --force --seed
+    
+    # Just seed the existing database
+    python _helpers/db_seed.py
 """
 
 import os
 import sys
+from datetime import datetime, timedelta, timezone
 from dotenv import load_dotenv
 
 # Load environment variables from .env file
@@ -18,7 +30,7 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from flaskr import create_app
 from data_access import db, Question, Category, User, GameSession
 
-# Sample data
+# Sample categories
 CATEGORIES = [
     'Science',
     'Art',
@@ -28,6 +40,7 @@ CATEGORIES = [
     'Sports'
 ]
 
+# Sample questions (expanded set for better variety)
 QUESTIONS = [
     {
         'question': 'Whose autobiography is entitled "I Know Why the Caged Bird Sings"?',
@@ -101,9 +114,58 @@ QUESTIONS = [
         'category': 'History',
         'difficulty': 1
     },
+    # Additional questions for more variety
+    {
+        'question': 'What is the capital of France?',
+        'answer': 'Paris',
+        'category': 'Geography',
+        'difficulty': 1
+    },
+    {
+        'question': 'Who painted the Mona Lisa?',
+        'answer': 'Leonardo da Vinci',
+        'category': 'Art',
+        'difficulty': 2
+    },
+    {
+        'question': 'What is the most abundant gas in the atmosphere?',
+        'answer': 'Nitrogen',
+        'category': 'Science',
+        'difficulty': 2
+    },
+    {
+        'question': 'In which year did the Titanic sink?',
+        'answer': '1912',
+        'category': 'History',
+        'difficulty': 2
+    },
+    {
+        'question': 'How many strings does a violin have?',
+        'answer': '4',
+        'category': 'Art',
+        'difficulty': 1
+    },
+    {
+        'question': 'What is the fastest animal on Earth?',
+        'answer': 'Cheetah',
+        'category': 'Science',
+        'difficulty': 1
+    },
+    {
+        'question': 'Who directed the movie Inception?',
+        'answer': 'Christopher Nolan',
+        'category': 'Entertainment',
+        'difficulty': 2
+    },
+    {
+        'question': 'Which country has the most FIFA World Cup wins?',
+        'answer': 'Brazil',
+        'category': 'Sports',
+        'difficulty': 2
+    },
 ]
 
-# Test users for demo/testing
+# Test users with realistic profile data
 USERS = [
     {
         'username': 'alice_wonder',
@@ -121,62 +183,143 @@ USERS = [
         'username': 'diana_prince',
         'email': 'diana@example.com'
     },
+    {
+        'username': 'eve_scientist',
+        'email': 'eve@example.com'
+    },
 ]
 
-# Test game sessions (will reference created users and categories)
+# Test game sessions with realistic data (multiple games per user)
+# Each entry creates a game session and updates user stats
 GAME_SESSIONS_DATA = [
+    # Alice's games
     {
         'username': 'alice_wonder',
         'category': 'Science',
-        'score': 95
+        'score': 95,
+        'days_ago': 5
     },
     {
         'username': 'alice_wonder',
         'category': 'History',
-        'score': 87
+        'score': 87,
+        'days_ago': 4
     },
+    {
+        'username': 'alice_wonder',
+        'category': 'Geography',
+        'score': 92,
+        'days_ago': 3
+    },
+    {
+        'username': 'alice_wonder',
+        'category': None,  # General quiz
+        'score': 88,
+        'days_ago': 2
+    },
+    # Bob's games
     {
         'username': 'bob_builder',
         'category': 'Art',
-        'score': 78
+        'score': 78,
+        'days_ago': 6
     },
+    {
+        'username': 'bob_builder',
+        'category': 'Entertainment',
+        'score': 85,
+        'days_ago': 4
+    },
+    {
+        'username': 'bob_builder',
+        'category': 'Sports',
+        'score': 92,
+        'days_ago': 2
+    },
+    # Charlie's games
     {
         'username': 'charlie_brown',
         'category': 'Geography',
-        'score': 92
+        'score': 92,
+        'days_ago': 7
     },
+    {
+        'username': 'charlie_brown',
+        'category': 'Science',
+        'score': 76,
+        'days_ago': 5
+    },
+    {
+        'username': 'charlie_brown',
+        'category': 'Art',
+        'score': 84,
+        'days_ago': 1
+    },
+    # Diana's games
     {
         'username': 'diana_prince',
         'category': None,  # General quiz
-        'score': 88
+        'score': 88,
+        'days_ago': 6
+    },
+    {
+        'username': 'diana_prince',
+        'category': 'History',
+        'score': 95,
+        'days_ago': 3
+    },
+    {
+        'username': 'diana_prince',
+        'category': 'Entertainment',
+        'score': 80,
+        'days_ago': 1
+    },
+    # Eve's games
+    {
+        'username': 'eve_scientist',
+        'category': 'Science',
+        'score': 99,
+        'days_ago': 4
+    },
+    {
+        'username': 'eve_scientist',
+        'category': 'Science',
+        'score': 97,
+        'days_ago': 2
+    },
+    {
+        'username': 'eve_scientist',
+        'category': None,  # General quiz
+        'score': 91,
+        'days_ago': 1
     },
 ]
-
-
 def seed_database():
     """Seed the database with initial data."""
     app = create_app()
     
     with app.app_context():
-        print("Seeding database...")
+        print("🌱 Seeding database with sample data...\n")
         
         # Add categories
-        print("Adding categories...")
+        print("📁 Adding categories...")
+        categories_added = 0
         for category_name in CATEGORIES:
             # Check if category already exists
             existing = Category.query.filter_by(type=category_name).first()
             if not existing:
                 category = Category(type=category_name)
                 db.session.add(category)
+                categories_added += 1
             else:
-                print(f"  Category '{category_name}' already exists, skipping...")
+                print(f"   ⚠️  Category '{category_name}' already exists, skipping...")
         
         db.session.commit()
-        print(f"✓ Added {len(CATEGORIES)} categories")
+        print(f"   ✓ Added {categories_added} categories\n")
         
         # Add questions
-        print("Adding questions...")
-        added_count = 0
+        print("❓ Adding questions...")
+        questions_added = 0
         for q_data in QUESTIONS:
             # Check if question already exists
             existing = Question.query.filter_by(
@@ -186,7 +329,7 @@ def seed_database():
                 # Look up category ID by name
                 category_obj = Category.query.filter_by(type=q_data['category']).first()
                 if not category_obj:
-                    print(f"  Warning: Category '{q_data['category']}' not found, skipping question...")
+                    print(f"   ⚠️  Category '{q_data['category']}' not found, skipping question...")
                     continue
                 
                 question = Question(
@@ -196,16 +339,18 @@ def seed_database():
                     difficulty=q_data['difficulty']
                 )
                 db.session.add(question)
-                added_count += 1
+                questions_added += 1
             else:
-                print(f"  Question '{q_data['question'][:50]}...' already exists, skipping...")
+                print(f"   ⚠️  Question '{q_data['question'][:50]}...' already exists, skipping...")
         
         db.session.commit()
-        print(f"✓ Added {added_count} questions")
+        print(f"   ✓ Added {questions_added} questions\n")
         
         # Add test users
-        print("Adding test users...")
-        added_users = 0
+        print("👥 Adding test users...")
+        users_added = 0
+        created_users = {}
+        
         for user_data in USERS:
             existing = User.query.filter_by(username=user_data['username']).first()
             if not existing:
@@ -214,21 +359,26 @@ def seed_database():
                     email=user_data['email']
                 )
                 db.session.add(user)
-                added_users += 1
+                created_users[user_data['username']] = user
+                users_added += 1
             else:
-                print(f"  User '{user_data['username']}' already exists, skipping...")
+                created_users[user_data['username']] = existing
+                print(f"   ⚠️  User '{user_data['username']}' already exists, skipping...")
         
         db.session.commit()
-        print(f"✓ Added {added_users} test users")
+        print(f"   ✓ Added {users_added} test users\n")
         
         # Add game sessions
-        print("Adding game sessions...")
-        added_sessions = 0
+        print("🎮 Adding game sessions...")
+        sessions_added = 0
+        
         for session_data in GAME_SESSIONS_DATA:
             # Look up user by username
-            user = User.query.filter_by(username=session_data['username']).first()
+            username = session_data['username']
+            user = User.query.filter_by(username=username).first()
+            
             if not user:
-                print(f"  Warning: User '{session_data['username']}' not found, skipping game session...")
+                print(f"   ⚠️  User '{username}' not found, skipping game session...")
                 continue
             
             # Look up category if specified
@@ -238,24 +388,49 @@ def seed_database():
                 if category_obj:
                     category_id = category_obj.id
                 else:
-                    print(f"  Warning: Category '{session_data['category']}' not found, creating session without category...")
+                    print(f"   ⚠️  Category '{session_data['category']}' not found, creating session without category...")
+            
+            # Calculate date_played based on days_ago
+            days_ago = session_data.get('days_ago', 0)
+            date_played = datetime.now(timezone.utc) - timedelta(days=days_ago)
             
             game_session = GameSession(
                 user_id=user.id,
                 score=session_data['score'],
                 category_id=category_id
             )
+            # Manually set the date_played after creation
+            game_session.date_played = date_played
+            
             db.session.add(game_session)
             
             # Update user stats
             user.games_played += 1
             user.total_score += session_data['score']
-            added_sessions += 1
+            sessions_added += 1
         
         db.session.commit()
-        print(f"✓ Added {added_sessions} game sessions")
+        print(f"   ✓ Added {sessions_added} game sessions\n")
         
-        print("\n✓ Database seeding completed successfully!")
+        # Print summary
+        print("=" * 60)
+        print("✅ Database seeding completed successfully!")
+        print("=" * 60)
+        print("\n📊 Summary:")
+        print(f"   • Categories: {len(CATEGORIES)}")
+        print(f"   • Questions: {len(QUESTIONS)}")
+        print(f"   • Users: {len(USERS)}")
+        print(f"   • Game Sessions: {len(GAME_SESSIONS_DATA)}")
+        
+        # Print user statistics
+        print("\n👤 User Statistics:")
+        all_users = User.query.all()
+        for user in all_users:
+            if user.games_played > 0:
+                avg_score = user.total_score / user.games_played
+                print(f"   • {user.username}: {user.games_played} games, {user.total_score} total pts, {avg_score:.1f} avg")
+        
+        print("\n✨ Ready to play!\n")
 
 
 if __name__ == '__main__':

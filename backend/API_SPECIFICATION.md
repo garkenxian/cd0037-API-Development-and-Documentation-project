@@ -315,13 +315,13 @@ Complete REST API specification for Trivia Quiz Application with 16 total endpoi
 
 ---
 
-## 3. QUIZ ENDPOINTS (Persistent Session with Answer Tracking)
+## 3. GAME ENDPOINTS (Persistent Session with Answer Tracking)
 
-### POST /quizzes
-**Description:** Create a new quiz session and return the first question
+### POST /games
+**Description:** Create a new game session and return the first question
 
 **Method:** POST
-**URL:** `/quizzes`
+**URL:** `/games`
 
 **Request Body (JSON):**
 ```json
@@ -333,16 +333,16 @@ Complete REST API specification for Trivia Quiz Application with 16 total endpoi
 ```
 
 **Required Fields:**
-- `user_id` (integer): User starting the quiz
+- `user_id` (integer): User starting the game
 - `category_id` (integer): Category ID (0 for all categories)
 
 **Optional Fields:**
-- `number_of_questions` (integer, default=5): Number of questions in quiz (1-20)
+- `number_of_questions` (integer, default=5): Number of questions in game (1-20)
 
 **Response (Success - 201):**
 ```json
 {
-  "quiz_session_id": 42,
+  "game_session_id": 42,
   "question_number": 1,
   "current_score": {
     "correct": 0,
@@ -370,17 +370,17 @@ Complete REST API specification for Trivia Quiz Application with 16 total endpoi
 
 ---
 
-### GET /quizzes/:quiz_session_id
-**Description:** Get current quiz state and next unanswered question (catch-up endpoint)
+### GET /games/:game_session_id
+**Description:** Get current game state and next unanswered question (catch-up endpoint)
 
 **Method:** GET
-**URL:** `/quizzes/<int:quiz_session_id>`
-**Example:** `/quizzes/42`
+**URL:** `/games/<int:game_session_id>`
+**Example:** `/games/42`
 
 **Response (Success - 200):**
 ```json
 {
-  "quiz_session_id": 42,
+  "game_session_id": 42,
   "question_number": 3,
   "current_score": {
     "correct": 2,
@@ -398,17 +398,17 @@ Complete REST API specification for Trivia Quiz Application with 16 total endpoi
 }
 ```
 
-**Response (Quiz Completed - 200):**
+**Response (Game Completed - 200):**
 ```json
 {
-  "quiz_session_id": 42,
+  "game_session_id": 42,
   "status": "completed",
   "current_score": {
     "correct": 4,
     "total_answered": 5,
     "total_questions": 5
   },
-  "message": "Quiz completed",
+  "message": "Game completed",
   "success": true
 }
 ```
@@ -416,19 +416,19 @@ Complete REST API specification for Trivia Quiz Application with 16 total endpoi
 **Use Cases:**
 - User lost connection, needs to catch up
 - Frontend refresh, needs current state
-- Check quiz completion status
+- Check game completion status
 
 **Errors:**
-- 404: Quiz session not found
+- 404: Game session not found
 
 ---
 
-### POST /quizzes/:quiz_session_id/:question_number
-**Description:** Answer a quiz question and get the next question
+### POST /games/:game_session_id/:question_number
+**Description:** Answer a game question and get the next question
 
 **Method:** POST
-**URL:** `/quizzes/<int:quiz_session_id>/<int:question_number>`
-**Example:** `/quizzes/42/1`
+**URL:** `/games/<int:game_session_id>/<int:question_number>`
+**Example:** `/games/42/1`
 
 **Request Body (JSON):**
 ```json
@@ -443,7 +443,7 @@ Complete REST API specification for Trivia Quiz Application with 16 total endpoi
 **Response (Answer Correct, More Questions - 200):**
 ```json
 {
-  "quiz_session_id": 42,
+  "game_session_id": 42,
   "answered_question_number": 1,
   "correct": true,
   "correct_answer": "H2O",
@@ -464,11 +464,11 @@ Complete REST API specification for Trivia Quiz Application with 16 total endpoi
 }
 ```
 
-**Response (Answer Correct, Quiz Complete - 200):**
+**Response (Answer Correct, Game Complete - 200):**
 ```json
 {
-  "quiz_session_id": 42,
-  "question_number": 5,
+  "game_session_id": 42,
+  "answered_question_number": 5,
   "correct": true,
   "correct_answer": "Paris",
   "current_score": {
@@ -476,8 +476,8 @@ Complete REST API specification for Trivia Quiz Application with 16 total endpoi
     "total_answered": 5,
     "total_questions": 5
   },
-  "quiz_status": "completed",
-  "question_number": 6,
+  "status": "completed",
+  "next_question_number": null,
   "question": null,
   "success": true
 }
@@ -486,8 +486,8 @@ Complete REST API specification for Trivia Quiz Application with 16 total endpoi
 **Response (Answer Incorrect - 200):**
 ```json
 {
-  "quiz_session_id": 42,
-  "question_number": 2,
+  "game_session_id": 42,
+  "answered_question_number": 2,
   "correct": false,
   "correct_answer": "Paris",
   "current_score": {
@@ -495,7 +495,7 @@ Complete REST API specification for Trivia Quiz Application with 16 total endpoi
     "total_answered": 2,
     "total_questions": 5
   },
-  "question_number": 3,
+  "next_question_number": 3,
   "question": {
     "id": 22,
     "question": "What is 2+2?",
@@ -528,6 +528,7 @@ Complete REST API specification for Trivia Quiz Application with 16 total endpoi
 - 422: Quiz already completed
 - 422: Question already answered (re-answer attempt)
 - 422: Invalid question_number (expected question X, got Y)
+- 501: Not Implemented - Phase 1b (game_session_answer audit table) not available. This endpoint requires the Phase 1b layer to function correctly and prevent nondeterministic scoring bugs. It will return 501 until Phase 1b is implemented.
 
 ---
 
@@ -785,9 +786,9 @@ Complete REST API specification for Trivia Quiz Application with 16 total endpoi
 | 7 | GET | `/categories/<id>/questions` | Get questions by category | Existing |
 | 8 | POST | `/questions` | Create question | Modified |
 | 9 | DELETE | `/questions/<id>` | Delete question | Existing |
-| 10 | POST | `/quizzes` | Create quiz session, return first question | New |
-| 11 | GET | `/quizzes/<id>` | Get current quiz state (catch-up) | New |
-| 12 | POST | `/quizzes/<id>/<question_number>` | Answer question, return next | New |
+| 10 | POST | `/games` | Create game session, return first question | New |
+| 11 | GET | `/games/<id>` | Get current game state (catch-up) | New |
+| 12 | POST | `/games/<id>/<question_number>` | Answer question, return next | New |
 | 13 | POST | `/users` | Create user | New |
 | 14 | GET | `/users` | List all users | New |
 | 15 | GET | `/users/<id>` | Get user + game history | New |
@@ -799,8 +800,8 @@ Complete REST API specification for Trivia Quiz Application with 16 total endpoi
 
 ## Key Security Decisions
 
-1. **Answer Never Exposed**: POST /quizzes and GET /quizzes/<id> do NOT return an answer field
-2. **Server-Side Validation**: POST /quizzes/<quiz_session_id>/<question_number> validates all answers
+1. **Answer Never Exposed**: POST /games and GET /games/<id> do NOT return an answer field
+2. **Server-Side Validation**: POST /games/<game_session_id>/<question_number> validates all answers
 3. **Authoritative Score**: Database score is source of truth, not client state
 4. **Audit Trail**: GameSession records every quiz with score
 5. **No Authentication (Current Phase)**: Username-only, no passwords
@@ -818,10 +819,10 @@ Complete REST API specification for Trivia Quiz Application with 16 total endpoi
    GET /categories
    → {categories: {1: "Science", 2: "Art", ...}}
 
-3. Create quiz session, get first question (NO ANSWER RETURNED)
-   POST /quizzes {user_id: 1, category_id: 1, number_of_questions: 5}
+3. Create game session, get first question (NO ANSWER RETURNED)
+   POST /games {user_id: 1, category_id: 1, number_of_questions: 5}
    → {
-       quiz_session_id: 42,
+       game_session_id: 42,
        question_number: 1,
        current_score: {correct: 0, total_answered: 0, total_questions: 5},
        question: {id: 7, question: "What is H2O?", ...}
@@ -932,46 +933,73 @@ Complete REST API specification for Trivia Quiz Application with 16 total endpoi
 - `questions`: id, question, answer, category_id (FK), difficulty, rating
 - `users`: id, username, email, total_score, games_played, created_at
 
-**New Tables for Quiz Sessions:**
+**Phase 1 Tables (Current):**
 
-### quiz_session
-Tracks overall quiz session information
+### game_sessions
+Tracks overall game session information
 ```
 - id (PK)
 - user_id (FK → users)
-- category_id (FK → categories)
-- number_of_questions (integer)
-- status (enum: 'in_progress', 'completed', 'abandoned')
-- created_at (timestamp)
-- completed_at (timestamp, nullable)
+- category_id (FK → categories, nullable - NULL means all categories)
+- score (integer) - points earned in this game
+- number_of_questions (integer) - total questions in this game session (1-20)
+- date_played (timestamp) - when the game was played
 ```
 
-### quiz_session_answer
-Audit trail - each question answered in a quiz
+**Phase 1b Tables (CRITICAL PREREQUISITE):**
+
+### game_session_answer (REQUIRED for game endpoints to function)
+Audit trail - each question answered in a game. **This table is essential** for:
+- Preventing duplicate questions in same session
+- Finding next unanswered question
+- Validating sequential answering
+- Enabling catch-up after connection loss
+
 ```
 - id (PK)
-- quiz_session_id (FK → quiz_session)
-- question_number (integer) - which question in sequence (1-5, etc)
-- question_id (FK → questions)
-- question_text (text) - snapshot of question at time of quiz (if deleted later, history preserved)
-- user_answer (text)
-- correct_answer (text)
-- is_correct (boolean)
-- answered_at (timestamp)
+- game_session_id (FK → game_sessions) - which game this answer belongs to
+- question_number (integer) - sequence position in game (1, 2, 3, 4, 5...)
+- question_id (FK → questions) - which question was asked
+- question_text (text) - snapshot of question at time (immutable, for history preservation)
+- user_answer (text) - what user submitted
+- correct_answer (text) - the correct answer (from question at time of game)
+- is_correct (boolean) - true if user_answer matches correct_answer
+- answered_at (timestamp) - when user submitted answer
 ```
 
-**Relationships:**
-- quiz_session.user_id → users.id
-- quiz_session.category_id → categories.id (can be NULL for all categories)
-- quiz_session_answer.quiz_session_id → quiz_session.id
-- quiz_session_answer.question_id → questions.id
+**Unique Constraint:**
+- (game_session_id, question_number) - Prevent answering same question_number twice in same game
 
-**Why This Design:**
-- ✅ Persistent audit trail (user can replay quiz)
-- ✅ Question snapshots (deleted questions don't break quiz history)
-- ✅ Complete answer tracking (for analytics, re-review)
-- ✅ Session recovery (GET /quizzes/id catches user up)
-- ✅ No duplicate answers (can't re-answer same question)
+**Relationships:**
+- game_sessions.user_id → users.id
+- game_sessions.category_id → categories.id (can be NULL for all categories)
+- game_session_answer.game_session_id → game_sessions.id (CASCADE DELETE)
+- game_session_answer.question_id → questions.id (RESTRICT - preserve history)
+
+**Phase 1 (Current) - Core Implementation:**
+- ✅ Game session tracking (id, user_id, score, category_id, date_played)
+- ✅ Score persistence (updated by answer endpoint)
+- ✅ User statistics (total_score, games_played auto-updated in users table)
+- ✅ Category tracking (NULL = all categories, otherwise specific category)
+
+**Phase 1b (CRITICAL PREREQUISITE - Must complete before Phase 2 game endpoints) :**
+- ⏳ Audit trail (game_session_answer table) - **REQUIRED for question deduplication and catch-up**
+- ⏳ Question snapshots (deleted questions don't break quiz history)
+- ⏳ Question tracking (prevents answering same question twice in same game)
+- ⏳ Complete answer tracking (for analytics, validation, re-review)
+
+**Why Phase 1b is Required:**
+The game_session table alone cannot track which questions have been answered. Without `game_session_answer`:
+- No way to prevent duplicate questions in same session
+- No way to find "next unanswered question" for `GET /games/:id`
+- No way to validate sequential answering in `POST /games/:id/:question_number`
+- No persistent audit trail for incomplete/abandoned games
+
+**Future Enhancements (v3+):**
+- Status tracking (in_progress, completed, abandoned) - requires v2 data migration
+- Admin replay/analytics dashboard
+- Question difficulty weighting
+- User performance analytics
 
 ---
 
@@ -985,4 +1013,4 @@ Audit trail - each question answered in a quiz
 - Score format: `{correct: int, total_answered: int, total_questions: int}` (UI calculates percentage)
 - Auto-completion: When user answers question_number = total_questions, quiz marked complete + User stats updated
 - Concurrent quizzes: User can have multiple active quiz_sessions
-- Quiz recovery: GET /quizzes/id always returns next unanswered question or completion status
+- Game recovery: GET /games/id always returns next unanswered question or completion status

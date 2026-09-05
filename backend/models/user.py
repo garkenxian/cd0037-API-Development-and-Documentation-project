@@ -1,3 +1,5 @@
+"""User model - Pure ORM definition"""
+
 from datetime import datetime
 from sqlalchemy import Column, Integer, String, DateTime
 from . import db
@@ -6,6 +8,7 @@ from . import db
 class User(db.Model):
     """
     User model for tracking player profiles and scores
+    Pure ORM definition - no business logic
     """
     __tablename__ = 'users'
 
@@ -21,20 +24,6 @@ class User(db.Model):
         self.email = email
         self.total_score = 0
         self.games_played = 0
-
-    def insert(self):
-        """Insert this user into the database"""
-        db.session.add(self)
-        db.session.commit()
-
-    def update(self):
-        """Update this user in the database"""
-        db.session.commit()
-
-    def delete(self):
-        """Delete this user from the database"""
-        db.session.delete(self)
-        db.session.commit()
 
     def format(self):
         """Return formatted user as dictionary"""
