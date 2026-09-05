@@ -103,11 +103,9 @@ Per-file baseline highlights:
    - `Search.js`: 62.50%
    - `Question.js`: 71.42%
 
-Reproducible commands:
-1. Backend coverage:
-   - `Push-Location backend; c:/dev/git/cd0037-API-Development-and-Documentation-project/venv/Scripts/python.exe -m pytest --cov=. --cov-report=term --cov-report=json:coverage_backend.json -q; Pop-Location`
-2. Frontend coverage:
-   - `Push-Location frontend; $env:CI='true'; npm test -- --coverage --watchAll=false --passWithNoTests; Pop-Location`
+Reproducible commands (from repo root):
+1. Backend coverage: `cd backend && python -m pytest --cov=. --cov-report=term --cov-report=json:coverage_backend.json -q`
+2. Frontend coverage: `cd frontend && CI=true npm test -- --coverage --watchAll=false --passWithNoTests`
 
 Active endpoint contracts (from controllers):
 1. Categories
