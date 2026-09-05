@@ -30,8 +30,9 @@ def create_app(test_config=None):
         database_path = test_config.get('SQLALCHEMY_DATABASE_URI')
         setup_db(app, database_path=database_path)
 
-    # Setup CORS - Allow requests from all origins
-    CORS(app, resources={r"/*": {"origins": "*"}})
+    # Setup CORS with configurable origins (default to all for dev, restrict for production)
+    cors_origins = app.config.get('CORS_ORIGINS', '*')
+    CORS(app, resources={r"/*": {"origins": cors_origins}})
     
     # Database tables are created in setup_db()
 

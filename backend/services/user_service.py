@@ -49,7 +49,7 @@ class UserService:
             db.session.commit()
         except Exception as e:
             db.session.rollback()
-            raise ValueError(f"Failed to create user: {str(e)}")
+            raise  # Re-raise DB error so it surfaces as 500, not client error
         
         return user
 

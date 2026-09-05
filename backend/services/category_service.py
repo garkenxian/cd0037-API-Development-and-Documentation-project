@@ -39,7 +39,7 @@ class CategoryService:
             db.session.commit()
         except Exception as e:
             db.session.rollback()
-            raise ValueError(f"Failed to create category: {str(e)}")
+            raise  # Re-raise DB error so it surfaces as 500, not client error
         
         return category
 

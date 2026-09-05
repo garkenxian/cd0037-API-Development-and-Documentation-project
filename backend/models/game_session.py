@@ -25,20 +25,6 @@ class GameSession(db.Model):
         self.category_id = category_id
         self.number_of_questions = number_of_questions
 
-    def insert(self):
-        """DEPRECATED: Use GameSessionRepository.create() instead"""
-        db.session.add(self)
-        db.session.commit()
-
-    def update(self):
-        """DEPRECATED: Use GameSessionRepository.update() instead"""
-        db.session.commit()
-
-    def delete(self):
-        """DEPRECATED: Use GameSessionRepository.delete() instead"""
-        db.session.delete(self)
-        db.session.commit()
-
     def format(self):
         """Return formatted game session as dictionary"""
         return {

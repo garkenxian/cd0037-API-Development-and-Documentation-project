@@ -57,7 +57,7 @@ class QuestionService:
             db.session.commit()
         except Exception as e:
             db.session.rollback()
-            raise ValueError(f"Failed to create question: {str(e)}")
+            raise  # Re-raise DB error so it surfaces as 500, not client error
         
         return question
 

@@ -833,13 +833,13 @@ class GamesEndpointUnitTests(unittest.TestCase):
             controllers.games.PHASE_1B_AVAILABLE = True
             controllers.games.GameSessionAnswerService = AnswerStub
             
-            # Try to answer question that was never served
+            # Try to answer question that was never served (invalid question_number for this session)
             response = self.client.post(
                 f'/games/{game_session_id}/99',
                 json={'user_answer': 'Test Answer'}
             )
             
-            self.assertEqual(response.status_code, 404)
+            self.assertEqual(response.status_code, 422)
         finally:
             controllers.games.PHASE_1B_AVAILABLE = original_phase_1b
             if original_service:

@@ -94,7 +94,7 @@ class UserServiceUnitTests(unittest.TestCase):
         mock_repo.create.return_value = Mock()
         mock_db.session.commit.side_effect = Exception("DB Error")
         
-        with self.assertRaises(ValueError):
+        with self.assertRaises(Exception):
             UserService.create_user('newuser', 'new@example.com')
         
         # Verify rollback was called
@@ -351,7 +351,7 @@ class CategoryServiceUnitTests(unittest.TestCase):
         mock_repo.create.return_value = Mock()
         mock_db.session.commit.side_effect = Exception("DB Error")
         
-        with self.assertRaises(ValueError):
+        with self.assertRaises(Exception):
             CategoryService.create_category('Science')
         
         mock_db.session.rollback.assert_called_once()
@@ -562,7 +562,7 @@ class QuestionServiceUnitTests(unittest.TestCase):
         mock_repo.create.return_value = Mock()
         mock_db.session.commit.side_effect = Exception("DB Error")
         
-        with self.assertRaises(ValueError):
+        with self.assertRaises(Exception):
             QuestionService.create_question('Q?', 'A', 1, 3)
         
         mock_db.session.rollback.assert_called_once()
@@ -740,7 +740,7 @@ class GameSessionServiceUnitTests(unittest.TestCase):
         mock_repo.create.return_value = Mock()
         mock_db.session.commit.side_effect = Exception("DB Error")
         
-        with self.assertRaises(ValueError):
+        with self.assertRaises(Exception):
             GameSessionService.create_game_session(1, 100)
         
         mock_db.session.rollback.assert_called_once()

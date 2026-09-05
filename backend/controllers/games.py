@@ -66,13 +66,13 @@ def create_game():
             number_of_questions=number_of_questions
         )
 
-        # Get first question - use random selection for variety
+        # Get first question for the game
         if normalized_category_id is not None:
             # Get random question from category
             first_question = QuestionService.get_random_question_by_category(normalized_category_id)
         else:
-            # Get random question from any category
-            # For simplicity, get first available question (in production, would be random)
+            # Get first available question from all categories (deterministic: gets first from first page)
+            # Note: In a production scenario with large datasets, consider implementing random selection
             questions_page = QuestionService.get_all_questions()
             if not questions_page.items:
                 raise ValueError("No questions available")
@@ -90,8 +90,8 @@ def create_game():
                 question_number=1,
                 question=first_question
             )
-        # If Phase 1b not available, endpoint still works but with nondeterministic scoring
-        # This will be fixed once Phase 1b implementation is complete
+        # Note: If Phase 1b not available, answer_question endpoint returns 501 (Not Implemented)
+        # to prevent nondeterministic scoring bugs. The endpoint is gated until Phase 1b is ready.
         
         return jsonify({
             'game_session_id': game_session.id,
@@ -234,8 +234,8 @@ def answer_question(game_session_id, question_number):
         )
         
         if not answer_record:
-            # Question_number was never served in this session
-            abort(404)
+            # Invalid question_number for this session (not served / out of sequence)
+            abort(422)  # Unprocessable: question_number invalid for this game session
         
         # Check if already answered (prevent duplicates)
         if answer_record.is_already_answered():
