@@ -1,7 +1,11 @@
 # API Endpoints Specification
 
 ## Overview
-Complete REST API specification for Trivia Quiz Application with 16 total endpoints across 5 resource categories.
+Complete REST API specification for Trivia application with 17 total endpoints across 5 resource categories.
+
+**Contract Status:** Active source of truth  
+**Version:** v1.0  
+**Last Updated:** 2026-09-05
 
 ---
 
@@ -72,7 +76,7 @@ Complete REST API specification for Trivia Quiz Application with 16 total endpoi
 ```
 
 **Required Fields:**
-- `type` (string, non-empty): Category name
+- `type` (string, trimmed, 1-100 chars): Category name
 
 **Response (Success - 201):**
 ```json
@@ -86,6 +90,7 @@ Complete REST API specification for Trivia Quiz Application with 16 total endpoi
 **Errors:**
 - 400: Missing or invalid 'type' field
 - 422: Category name already exists (duplicate)
+- 422: Category name violates validation constraints
 
 ---
 
@@ -123,14 +128,11 @@ Complete REST API specification for Trivia Quiz Application with 16 total endpoi
 ---
 
 ### DELETE /categories/:id
-**Description:** Delete a category (with optional cascade delete of associated questions)
+**Description:** Delete a category
 
 **Method:** DELETE
 **URL:** `/categories/<int:id>`
-**Example:** `/categories/7` or `/categories/7?force=true`
-
-**Query Parameters:**
-- `force` (boolean, optional, default=false): If true, cascade delete all associated questions
+**Example:** `/categories/7`
 
 **Request Parameters:** Category ID in URL path
 
@@ -142,22 +144,13 @@ Complete REST API specification for Trivia Quiz Application with 16 total endpoi
 }
 ```
 
-**Response (Force Delete with Cascading - 200):**
-```json
-{
-  "deleted": 7,
-  "questions_deleted": 3,
-  "success": true
-}
-```
-
 **Behavior:**
-- If `force=false` (default): Delete only if no questions exist
-- If `force=true`: Delete category AND all associated questions
+- Delete only if no questions exist in the category
+- If category has one or more linked questions, return 422
 
 **Errors:**
 - 404: Category not found
-- 422: Category has associated questions AND force=false
+- 422: Category has associated questions
 
 ---
 
@@ -242,7 +235,8 @@ Complete REST API specification for Trivia Quiz Application with 16 total endpoi
 ```
 
 **Errors:**
-- 404: Category not found or no questions in category
+- 404: Category not found
+- 200: Category found but no questions returns empty `questions` with `total_questions: 0`
 - 400: Invalid page parameter
 
 ---
@@ -265,13 +259,13 @@ Complete REST API specification for Trivia Quiz Application with 16 total endpoi
 ```
 
 **Required Fields:**
-- `question` (string, non-empty): Question text
-- `answer` (string, non-empty): Answer text
+- `question` (string, trimmed, 1-500 chars): Question text
+- `answer` (string, trimmed, 1-500 chars): Answer text
 - `category` (integer): Category ID (must exist)
 - `difficulty` (integer, 1-5): Difficulty level
 
 **Optional Fields:**
-- `rating` (float, default=0): Initial rating
+- `rating` (float, default=0, range 0.0-5.0): Initial rating
 
 **Response (Success - 201):**
 ```json
@@ -290,6 +284,34 @@ Complete REST API specification for Trivia Quiz Application with 16 total endpoi
 - 400: Missing required fields
 - 422: Invalid category ID (category doesn't exist)
 - 422: Invalid difficulty (not 1-5)
+- 422: Field value violates validation constraints
+
+---
+
+### GET /questions/:id
+**Description:** Retrieve a single question by ID
+
+**Method:** GET
+**URL:** `/questions/<int:id>`
+**Example:** `/questions/5`
+
+**Request Parameters:** Question ID in URL path
+
+**Response (Success - 200):**
+```json
+{
+  "id": 5,
+  "question": "What is H2SO4?",
+  "answer": "Sulfuric acid",
+  "category": 1,
+  "difficulty": 3,
+  "rating": 3.2,
+  "success": true
+}
+```
+
+**Errors:**
+- 404: Question not found
 
 ---
 
@@ -515,20 +537,19 @@ Complete REST API specification for Trivia Quiz Application with 16 total endpoi
 
 **Auto-completion:**
 - When final question (question_number = total_questions) is answered:
-  - Quiz automatically marked as completed
+  - Game automatically marked as completed
   - User.total_score updated with final correct count
   - User.games_played incremented
-  - GameSession record created with complete audit trail
+  - GameSession and GameSessionAnswer records form the complete audit trail
   - Next question field returns null
 
 **Errors:**
 - 400: Missing user_answer field
-- 404: Quiz session not found
+- 404: Game session not found
 - 404: Question not found
-- 422: Quiz already completed
+- 422: Game already completed
 - 422: Question already answered (re-answer attempt)
 - 422: Invalid question_number (expected question X, got Y)
-- 501: Not Implemented - Phase 1b (game_session_answer audit table) not available. This endpoint requires the Phase 1b layer to function correctly and prevent nondeterministic scoring bugs. It will return 501 until Phase 1b is implemented.
 
 ---
 
@@ -548,7 +569,7 @@ Complete REST API specification for Trivia Quiz Application with 16 total endpoi
 ```
 
 **Required Fields:**
-- `username` (string, non-empty): Unique username
+- `username` (string, trimmed, 3-50 chars): Unique username
 
 **Response (Success - 201):**
 ```json
@@ -565,6 +586,7 @@ Complete REST API specification for Trivia Quiz Application with 16 total endpoi
 **Errors:**
 - 400: Missing or empty 'username'
 - 422: Username already exists
+- 422: Username violates validation constraints (for example length)
 
 ---
 
@@ -629,8 +651,8 @@ Complete REST API specification for Trivia Quiz Application with 16 total endpoi
   "game_sessions": [
     {
       "id": 5,
-      "quiz_category": 2,
-      "quiz_category_type": "Art",
+      "category_id": 2,
+      "category_type": "Art",
       "score": 5,
       "questions_answered": 5,
       "correct_answers": 5,
@@ -638,8 +660,8 @@ Complete REST API specification for Trivia Quiz Application with 16 total endpoi
     },
     {
       "id": 4,
-      "quiz_category": 1,
-      "quiz_category_type": "Science",
+      "category_id": 1,
+      "category_type": "Science",
       "score": 3,
       "questions_answered": 5,
       "correct_answers": 3,
@@ -655,11 +677,11 @@ Complete REST API specification for Trivia Quiz Application with 16 total endpoi
 
 ---
 
-### GET /leaderboard
+### GET /users/leaderboard
 **Description:** Get top users ranked by total score
 
 **Method:** GET
-**URL:** `/leaderboard`
+**URL:** `/users/leaderboard`
 
 **Query Parameters:**
 - `limit` (integer, optional, default=10): Number of top users to return
@@ -781,20 +803,21 @@ Complete REST API specification for Trivia Quiz Application with 16 total endpoi
 | 2 | GET | `/categories/<id>` | Get category details | New |
 | 3 | POST | `/categories` | Create category | New |
 | 4 | PUT | `/categories/<id>` | Update category | New |
-| 5 | DELETE | `/categories/<id>` | Delete category (with force cascade) | New |
+| 5 | DELETE | `/categories/<id>` | Delete category (fails with 422 if linked questions exist) | New |
 | 6 | GET | `/questions` | List paginated questions (with search) | Modified |
 | 7 | GET | `/categories/<id>/questions` | Get questions by category | Existing |
 | 8 | POST | `/questions` | Create question | Modified |
-| 9 | DELETE | `/questions/<id>` | Delete question | Existing |
-| 10 | POST | `/games` | Create game session, return first question | New |
-| 11 | GET | `/games/<id>` | Get current game state (catch-up) | New |
-| 12 | POST | `/games/<id>/<question_number>` | Answer question, return next | New |
-| 13 | POST | `/users` | Create user | New |
-| 14 | GET | `/users` | List all users | New |
-| 15 | GET | `/users/<id>` | Get user + game history | New |
-| 16 | GET | `/leaderboard` | Top users by score | New |
+| 9 | GET | `/questions/<id>` | Get question by ID | Existing |
+| 10 | DELETE | `/questions/<id>` | Delete question | Existing |
+| 11 | POST | `/games` | Create game session, return first question | New |
+| 12 | GET | `/games/<id>` | Get current game state (catch-up) | New |
+| 13 | POST | `/games/<id>/<question_number>` | Answer question, return next | New |
+| 14 | POST | `/users` | Create user | New |
+| 15 | GET | `/users` | List all users | New |
+| 16 | GET | `/users/<id>` | Get user + game history | New |
+| 17 | GET | `/users/leaderboard` | Top users by score | New |
 
-**Total: 16 endpoints** (7 new, 2 modified, 7 existing)
+**Total: 17 endpoints**
 
 ---
 
@@ -803,19 +826,19 @@ Complete REST API specification for Trivia Quiz Application with 16 total endpoi
 1. **Answer Never Exposed**: POST /games and GET /games/<id> do NOT return an answer field
 2. **Server-Side Validation**: POST /games/<game_session_id>/<question_number> validates all answers
 3. **Authoritative Score**: Database score is source of truth, not client state
-4. **Audit Trail**: GameSession records every quiz with score
+4. **Audit Trail**: GameSessionAnswer records each served question and submitted answer per game session
 5. **No Authentication (Current Phase)**: Username-only, no passwords
 
 ---
 
-## Data Flow Example: Complete Quiz Session
+## Data Flow Example: Complete Game Session
 
 ```
 1. User creates account
    POST /users {"username": "alice"}
    → {id: 1, username: "alice", total_score: 0, ...}
 
-2. User selects category and starts quiz
+2. User selects category and starts game
    GET /categories
    → {categories: {1: "Science", 2: "Art", ...}}
 
@@ -829,45 +852,45 @@ Complete REST API specification for Trivia Quiz Application with 16 total endpoi
      }
 
 4. User answers Question 1
-   POST /quizzes/42/1 {user_answer: "water"}
+   POST /games/42/1 {user_answer: "water"}
    → {
        correct: true,
        correct_answer: "H2O",
-       current_score: {correct: 1, total_answered: 1, total_questions: 5},
-       question_number: 2,
+     current_score: {correct: 1, total_answered: 1, total_questions: 5},
+     next_question_number: 2,
        question: {id: 15, question: "What is the capital of France?", ...}
      }
 
 5. User answers Question 2 (incorrect)
-   POST /quizzes/42/2 {user_answer: "london"}
+   POST /games/42/2 {user_answer: "london"}
    → {
        correct: false,
        correct_answer: "Paris",
-       current_score: {correct: 1, total_answered: 2, total_questions: 5},
-       question_number: 3,
+     current_score: {correct: 1, total_answered: 2, total_questions: 5},
+     next_question_number: 3,
        question: {id: 22, question: "What is 2+2?", ...}
      }
 
 6. Repeat for questions 3, 4...
 
 7. User answers final Question 5 (correct)
-   POST /quizzes/42/5 {user_answer: "4"}
+  POST /games/42/5 {user_answer: "4"}
    → {
        correct: true,
        correct_answer: "4",
        current_score: {correct: 4, total_answered: 5, total_questions: 5},
-       quiz_status: "completed",
-       question_number: 6,
+     status: "completed",
+     next_question_number: null,
        question: null
      }
    
    Backend automatically:
-   - Marks quiz_session as completed
-   - Creates game_session record with final score (4)
+  - Marks game_session as completed
+  - Persists final score (4 correct answers)
    - Updates User: total_score = 0 + 4 = 4, games_played = 0 + 1 = 1
 
 8. Frontend can optionally catch up (if connection lost)
-   GET /quizzes/42
+  GET /games/42
    → Shows current score and next unanswered question (or completion status)
 
 9. View user stats
@@ -875,16 +898,16 @@ Complete REST API specification for Trivia Quiz Application with 16 total endpoi
    → {id: 1, username: "alice", total_score: 4, games_played: 1, game_sessions: [...]}
 
 10. View leaderboard
-    GET /leaderboard
+  GET /users/leaderboard
     → {leaderboard: [{rank: 1, username: "alice", total_score: 4}, ...]}
 ```
 
 **Key Points:**
-- Quiz session is persistent (can catch-up with GET)
+- Game session is persistent (can catch-up with GET)
 - Answer validation is server-side (user never sees answer)
 - Score tracks correct/total_answered/total_questions (UI calculates %)
 - Auto-completion: final question answer triggers GameSession creation and User stats update
-- Each answer creates audit record in quiz_session_answer table
+- Each answer creates audit record in game_session_answer table
 
 
 ---
@@ -908,12 +931,12 @@ Complete REST API specification for Trivia Quiz Application with 16 total endpoi
 - ✅ Test DELETE → removes question
 - ✅ Test error cases: 404, 422 (bad category ID), 400 (missing fields)
 
-### Quiz (3 endpoints)
-- ✅ Test GET quiz → returns question WITHOUT answer
-- ✅ Test GET quiz excludes previous → doesn't repeat questions
+### Games (3 endpoints)
+- ✅ Test GET game state → returns question WITHOUT answer
+- ✅ Test GET game state excludes already answered questions
 - ✅ Test POST answer validation → correct/incorrect logic
 - ✅ Test answer matching → handles case, special chars, word order
-- ✅ Test POST game-session → creates record, updates user stats
+- ✅ Test POST game session create → creates record, updates user stats
 - ✅ Test error cases: 404 (user/category), 422 (invalid data)
 
 ### Users (4 endpoints)
@@ -933,69 +956,85 @@ Complete REST API specification for Trivia Quiz Application with 16 total endpoi
 - `questions`: id, question, answer, category_id (FK), difficulty, rating
 - `users`: id, username, email, total_score, games_played, created_at
 
-**Phase 1 Tables (Current):**
+**Required Tables:**
+
+## Normative Data Validation Constraints
+
+These constraints are part of the API contract and MUST be enforced at the database layer (PostgreSQL), in addition to service-layer validation.
+
+### users
+- `username`:
+  - NOT NULL
+  - CHECK `char_length(btrim(username)) BETWEEN 3 AND 50`
+  - UNIQUE (case-insensitive uniqueness recommended via unique index on `lower(btrim(username))`)
+- `total_score`:
+  - NOT NULL
+  - CHECK `total_score >= 0`
+- `games_played`:
+  - NOT NULL
+  - CHECK `games_played >= 0`
+
+### categories
+- `type`:
+  - NOT NULL
+  - CHECK `char_length(btrim(type)) BETWEEN 1 AND 100`
+  - UNIQUE (case-insensitive uniqueness recommended via unique index on `lower(btrim(type))`)
+
+### questions
+- `question`:
+  - NOT NULL
+  - CHECK `char_length(btrim(question)) BETWEEN 1 AND 500`
+- `answer`:
+  - NOT NULL
+  - CHECK `char_length(btrim(answer)) BETWEEN 1 AND 500`
+- `difficulty`:
+  - NOT NULL
+  - CHECK `difficulty BETWEEN 1 AND 5`
+- `rating`:
+  - CHECK `rating BETWEEN 0.0 AND 5.0`
+- `category`:
+  - NOT NULL
+  - FOREIGN KEY to `categories(id)`
 
 ### game_sessions
-Tracks overall game session information
-```
-- id (PK)
-- user_id (FK → users)
-- category_id (FK → categories, nullable - NULL means all categories)
-- score (integer) - points earned in this game
-- number_of_questions (integer) - total questions in this game session (1-20)
-- date_played (timestamp) - when the game was played
-```
+- `user_id`:
+  - NOT NULL
+  - FOREIGN KEY to `users(id)`
+- `score`:
+  - NOT NULL
+  - CHECK `score >= 0`
+- `number_of_questions`:
+  - NOT NULL
+  - CHECK `number_of_questions BETWEEN 1 AND 20`
+- `category_id`:
+  - NULL allowed for all-category games
+  - If non-null, FOREIGN KEY to `categories(id)`
 
-**Phase 1b Tables (CRITICAL PREREQUISITE):**
+### game_session_answer
+- `game_session_id`:
+  - NOT NULL
+  - FOREIGN KEY to `game_sessions(id)` with CASCADE DELETE
+- `question_number`:
+  - NOT NULL
+  - CHECK `question_number >= 1`
+  - UNIQUE composite constraint with `game_session_id`
+- `question_id`:
+  - NOT NULL
+  - FOREIGN KEY to `questions(id)`
+- `question_text`, `user_answer`, `correct_answer`:
+  - NOT NULL
+  - CHECK `char_length(btrim(<field>)) >= 1`
+- `is_correct`:
+  - NOT NULL boolean
 
-### game_session_answer (REQUIRED for game endpoints to function)
-Audit trail - each question answered in a game. **This table is essential** for:
-- Preventing duplicate questions in same session
-- Finding next unanswered question
-- Validating sequential answering
-- Enabling catch-up after connection loss
-
-```
-- id (PK)
-- game_session_id (FK → game_sessions) - which game this answer belongs to
-- question_number (integer) - sequence position in game (1, 2, 3, 4, 5...)
-- question_id (FK → questions) - which question was asked
-- question_text (text) - snapshot of question at time (immutable, for history preservation)
-- user_answer (text) - what user submitted
-- correct_answer (text) - the correct answer (from question at time of game)
-- is_correct (boolean) - true if user_answer matches correct_answer
-- answered_at (timestamp) - when user submitted answer
-```
-
-**Unique Constraint:**
-- (game_session_id, question_number) - Prevent answering same question_number twice in same game
-
-**Relationships:**
-- game_sessions.user_id → users.id
-- game_sessions.category_id → categories.id (can be NULL for all categories)
-- game_session_answer.game_session_id → game_sessions.id (CASCADE DELETE)
-- game_session_answer.question_id → questions.id (RESTRICT - preserve history)
-
-**Phase 1 (Current) - Core Implementation:**
-- ✅ Game session tracking (id, user_id, score, category_id, date_played)
-- ✅ Score persistence (updated by answer endpoint)
-- ✅ User statistics (total_score, games_played auto-updated in users table)
-- ✅ Category tracking (NULL = all categories, otherwise specific category)
-
-**Phase 1b (CRITICAL PREREQUISITE - Must complete before Phase 2 game endpoints) :**
-- ⏳ Audit trail (game_session_answer table) - **REQUIRED for question deduplication and catch-up**
-- ⏳ Question snapshots (deleted questions don't break quiz history)
-- ⏳ Question tracking (prevents answering same question twice in same game)
-- ⏳ Complete answer tracking (for analytics, validation, re-review)
-
-**Why Phase 1b is Required:**
-The game_session table alone cannot track which questions have been answered. Without `game_session_answer`:
+**Design Rationale:**
+The game_sessions table alone cannot track which questions have been answered. Without `game_session_answer`:
 - No way to prevent duplicate questions in same session
 - No way to find "next unanswered question" for `GET /games/:id`
 - No way to validate sequential answering in `POST /games/:id/:question_number`
 - No persistent audit trail for incomplete/abandoned games
 
-**Future Enhancements (v3+):**
+**Future Enhancements (Non-normative):**
 - Status tracking (in_progress, completed, abandoned) - requires v2 data migration
 - Admin replay/analytics dashboard
 - Question difficulty weighting
@@ -1008,9 +1047,10 @@ The game_session table alone cannot track which questions have been answered. Wi
 - All timestamps use ISO 8601 format: `2026-09-04T14:23:45Z`
 - All IDs are positive integers
 - All text fields trimmed (no leading/trailing whitespace)
+- Database constraints are authoritative for data integrity; service validation should mirror them for clearer client error messages.
 - Pagination: 10 items per page (configurable)
 - Answer matching: case-insensitive, special chars stripped, substring matching
 - Score format: `{correct: int, total_answered: int, total_questions: int}` (UI calculates percentage)
-- Auto-completion: When user answers question_number = total_questions, quiz marked complete + User stats updated
-- Concurrent quizzes: User can have multiple active quiz_sessions
+- Auto-completion: When user answers question_number = total_questions, game marked complete + User stats updated
+- Concurrent games: User can have multiple active game_sessions
 - Game recovery: GET /games/id always returns next unanswered question or completion status

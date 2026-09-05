@@ -1,7 +1,7 @@
 # Business Decisions - API Design Overhaul
 
 ## Overview
-Redesigning trivia API to implement server-side answer validation, secure score tracking, and complete user management. This document captures 4 major departures from the original starter code design.
+Redesigning trivia API to implement server-side answer validation, secure score tracking, and complete user management. This document captures 5 major departures from the original starter code design.
 
 ---
 
@@ -258,6 +258,29 @@ UI calculates percentage (3/5 = 60%) from this data, giving frontend flexibility
 - Allows score persistence to User.total_score when GameSession created
 - User ID becomes required for POST /games (starting a game session)
 - Frontend will eventually need to create/select user before quiz
+
+---
+
+## Decision 5: Python Runtime Baseline (3.10+)
+
+**Change:** Standardize project runtime on Python 3.10+ instead of 3.7.
+
+**Context:**
+- Assignment starter materials referenced Python 3.7.
+- Python 3.7 is end-of-life and no longer maintained.
+
+**Decision:**
+- Use Python 3.10 as the minimum supported runtime for local development and CI.
+- Do not target Python 3.7 compatibility in this project pass.
+
+**Rationale:**
+- 3.10 is the lowest currently supported baseline that keeps dependencies and tooling stable.
+- Reduces risk from unsupported runtime behavior and package incompatibilities.
+- Keeps environment expectations clear for contributors and reviewers.
+
+**Operational Impact:**
+- Documentation and setup instructions must explicitly call out Python 3.10+.
+- CI and test commands should run against Python 3.10 as the required baseline.
 
 ---
 

@@ -65,6 +65,12 @@ class CategoryService:
         return CategoryRepository.get_all(page=page, per_page=per_page)
 
     @staticmethod
+    def get_all_categories_list():
+        """Get all categories as a simple list (no pagination)"""
+        from models import Category
+        return Category.query.all()
+
+    @staticmethod
     def get_all_categories_with_question_counts(page=1, per_page=50):
         """
         Get all categories WITH question counts

@@ -2,6 +2,7 @@
 
 from datetime import datetime
 from sqlalchemy import Column, Integer, String, DateTime
+from sqlalchemy.orm import relationship
 from . import db
 
 
@@ -14,12 +15,15 @@ class User(db.Model):
 
     id = Column(Integer, primary_key=True)
     username = Column(String, unique=True, nullable=False)
-    email = Column(String, unique=True, nullable=False)
+    email = Column(String, nullable=True)
     total_score = Column(Integer, default=0, nullable=False)
     games_played = Column(Integer, default=0, nullable=False)
     created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
+    
+    # Relationship to game sessions
+    game_sessions = relationship('GameSession', backref='user', lazy=True, foreign_keys='GameSession.user_id')
 
-    def __init__(self, username, email):
+    def __init__(self, username, email=None):
         self.username = username
         self.email = email
         self.total_score = 0

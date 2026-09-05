@@ -116,9 +116,14 @@ class QuestionService:
         return QuestionRepository.get_by_category_with_details(category_id, page=page, per_page=per_page)
 
     @staticmethod
-    def get_random_question_by_category(category_id):
+    def get_random_question_by_category(category_id, exclude_ids=None):
         """Get random question from category"""
-        return QuestionRepository.get_random_by_category(category_id)
+        return QuestionRepository.get_random_by_category(category_id, exclude_ids=exclude_ids)
+
+    @staticmethod
+    def get_random_question(exclude_ids=None):
+        """Get random question from all categories"""
+        return QuestionRepository.get_random(exclude_ids=exclude_ids)
 
     @staticmethod
     def update_question(question_id, **kwargs):

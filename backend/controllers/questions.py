@@ -6,6 +6,70 @@ from services import QuestionService, CategoryService
 questions_bp = Blueprint('questions', __name__, url_prefix='/questions')
 
 
+@questions_bp.route('', methods=['GET'])
+def get_questions():
+    """
+    Get paginated questions with optional search filter
+    
+    Query parameters:
+    - page: int (default 1)
+    - search: string (optional, case-insensitive substring match)
+    
+    Returns: {questions, total_questions, current_page, total_pages, categories, success: true}
+    Errors: 404 (page out of range), 400 (invalid page)
+    """
+    try:
+        page = request.args.get('page', 1, type=int)
+        search = request.args.get('search', None, type=str)
+        
+        if page < 1:
+            abort(400)
+        
+        if search:
+            # Search questions
+            questions_page = QuestionService.search_questions(search, page=page)
+        else:
+            # Get all questions
+            questions_page = QuestionService.get_all_questions(page=page)
+        
+        if page > questions_page.pages and questions_page.total > 0:
+            abort(404)
+        
+        # Get all categories for response
+        all_categories = CategoryService.get_all_categories_list()
+        categories_dict = {str(cat.id): cat.type for cat in all_categories}
+        
+        return jsonify({
+            'questions': [q.format() for q in questions_page.items],
+            'total_questions': questions_page.total,
+            'current_page': page,
+            'total_pages': questions_page.pages,
+            'categories': categories_dict,
+            'success': True
+        }), 200
+    except ValueError:
+        abort(400)
+    except Exception as e:
+        abort(500)
+
+
+@questions_bp.route('/<int:question_id>', methods=['GET'])
+def get_question(question_id):
+    """
+    Get a single question by ID
+    
+    Returns: question object
+    Errors: 404 (not found)
+    """
+    try:
+        question = QuestionService.get_question(question_id)
+        return jsonify(question.format()), 200
+    except ValueError:
+        abort(404)
+    except Exception as e:
+        abort(500)
+
+
 @questions_bp.route('', methods=['POST'])
 def create_question():
     """
@@ -59,4 +123,28 @@ def create_question():
             abort(400)
     except Exception as e:
         # Database or other unexpected errors
+        abort(500)
+
+
+@questions_bp.route('/<int:question_id>', methods=['DELETE'])
+def delete_question(question_id):
+    """
+    Delete a question by ID
+    
+    Returns: {deleted: id, success: true}
+    Errors: 404 (not found)
+    """
+    try:
+        question = QuestionService.get_question(question_id)
+        from data_access import db
+        db.session.delete(question)
+        db.session.commit()
+        
+        return jsonify({
+            'deleted': question_id,
+            'success': True
+        }), 200
+    except ValueError:
+        abort(404)
+    except Exception as e:
         abort(500)
