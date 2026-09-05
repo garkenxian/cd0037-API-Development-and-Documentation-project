@@ -39,6 +39,9 @@ class GamesEndpointTests(unittest.TestCase):
         
         self.q1 = QuestionRepository.create('Q1?', 'Water', self.cat_science.id, 'easy')
         self.q2 = QuestionRepository.create('Q2?', 'Answer2', self.cat_science.id, 'medium')
+        self.q3 = QuestionRepository.create('Q3?', 'Answer3', self.cat_science.id, 'hard')
+        self.q4 = QuestionRepository.create('Q4?', 'Answer4', self.cat_science.id, 'easy')
+        self.q5 = QuestionRepository.create('Q5?', 'Answer5', self.cat_science.id, 'medium')
         db.session.commit()
 
     def tearDown(self):
@@ -149,18 +152,18 @@ class GamesEndpointTests(unittest.TestCase):
 
     def test_answer_question_correct(self):
         """Test answering a question correctly"""
-        # Create a game first
-        create_response = self.client.post('/games', json={
-            'user_id': self.user.id,
-            'category_id': self.cat_science.id,
-            'number_of_questions': 5
-        })
-        response_data = create_response.get_json()
-        game_id = response_data['game_session_id']
-        
         # Mock QuestionService to return q1 with known answer 'Water'
         with patch('controllers.games.QuestionService.get_random_question_by_category') as mock_get:
             mock_get.return_value = self.q1
+            
+            # Create a game first
+            create_response = self.client.post('/games', json={
+                'user_id': self.user.id,
+                'category_id': self.cat_science.id,
+                'number_of_questions': 5
+            })
+            response_data = create_response.get_json()
+            game_id = response_data['game_session_id']
             
             # Answer a question with the correct answer for q1
             response = self.client.post(f'/games/{game_id}/1', json={
@@ -225,7 +228,7 @@ class GamesEndpointTests(unittest.TestCase):
         response = self.client.post(f'/games/{game_id}/10', json={
             'user_answer': 'Answer'
         })
-        self.assertEqual(response.status_code, 400)
+        self.assertEqual(response.status_code, 422)
 
 
 if __name__ == '__main__':

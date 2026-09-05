@@ -5,13 +5,14 @@ Maintains backward compatibility with existing imports
 """
 
 # Import db and setup from models package
-from models import db, setup_db, User, Category, Question, GameSession
+from models import db, setup_db, User, Category, Question, GameSession, GameSessionAnswer
 
 # Import repositories
 from .user_repository import UserRepository
 from .category_repository import CategoryRepository
 from .question_repository import QuestionRepository
 from .game_session_repository import GameSessionRepository
+from .game_session_answer_repository import GameSessionAnswerRepository
 
 # Export everything for backward compatibility
 __all__ = [
@@ -21,8 +22,10 @@ __all__ = [
     'Category', 
     'Question',
     'GameSession',
+    'GameSessionAnswer',
     'UserRepository',
     'CategoryRepository',
     'QuestionRepository',
-    'GameSessionRepository'
+    'GameSessionRepository',
+    'GameSessionAnswerRepository'
 ]

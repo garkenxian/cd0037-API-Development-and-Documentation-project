@@ -59,6 +59,40 @@ class GameSessionRepository:
         db.session.delete(game_session)
 
     @staticmethod
+    def atomic_mark_completed(game_session_id, awarded_score):
+        """
+        Atomically mark a game session as completed with awarded score.
+        Uses UPDATE with WHERE is_completed=False to ensure only one request succeeds.
+        
+        This prevents race conditions where multiple concurrent requests both observe
+        is_completed=False and both award points.
+        
+        Args:
+            game_session_id: ID of the game session to mark as completed
+            awarded_score: Score value to record as awarded
+            
+        Returns:
+            Number of rows affected (0 if already completed, 1 if just completed)
+            
+        Raises:
+            Exception: If database operation fails
+        """
+        from sqlalchemy import update
+        
+        # Build atomic update: only update if is_completed is currently False
+        stmt = update(GameSession).where(
+            (GameSession.id == game_session_id) & 
+            (GameSession.is_completed == False)
+        ).values(
+            is_completed=True,
+            awarded_score=awarded_score,
+            score=awarded_score
+        )
+        
+        result = db.session.execute(stmt)
+        return result.rowcount
+
+    @staticmethod
     def get_user_stats(user_id):
         """
         Get statistics for a user using SQL aggregation

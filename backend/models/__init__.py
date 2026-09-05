@@ -29,6 +29,7 @@ from .user import User
 from .category import Category
 from .question import Question
 from .game_session import GameSession
+from .game_session_answer import GameSessionAnswer
 
 # Export all models and utilities
-__all__ = ['db', 'setup_db', 'User', 'Category', 'Question', 'GameSession']
+__all__ = ['db', 'setup_db', 'User', 'Category', 'Question', 'GameSession', 'GameSessionAnswer']

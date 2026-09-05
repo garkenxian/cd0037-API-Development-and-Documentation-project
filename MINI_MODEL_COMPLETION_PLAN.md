@@ -66,6 +66,35 @@ Keep each task narrow and verifiable:
 4. Each run must end with: tests run, coverage check, docs updated if behavior changed.
 5. At the end of each phase, re-evaluate all remaining phases and adjust future tasks/ordering based on what changed.
 
+## Code Review Rules For Mini-Model Runs
+These rules keep reviews practical for a school assignment while still improving quality.
+
+1. Assignment-first pragmatism:
+   - Prioritize rubric alignment, endpoint correctness, test reliability, and phase exit criteria.
+   - Treat "must fix" as issues that break contracts, correctness, tests, security basics, or required coverage.
+   - Treat polish/perfection items as "recommended" unless they block a current-phase requirement.
+   - Do not block progress on enterprise-grade refinements that are outside assignment scope.
+
+2. Progress over perfection:
+   - Reviews should help the team ship the current phase safely, not redesign unrelated architecture.
+   - Prefer the smallest safe fix that satisfies current requirements and preserves momentum.
+   - Limit scope creep: if a suggestion belongs to a later phase, capture it as follow-up rather than a blocker.
+
+3. Phase-aware review decisions:
+   - Evaluate findings against Delivery Order and current phase goals before labeling severity.
+   - If a concern is primarily a future-phase item, tag it as deferred with the target phase.
+   - Only elevate deferred items to blockers when they create immediate correctness/security/contract risk now.
+
+4. Future-work integration requirement:
+   - Every review pass must check downstream impact using this plan's remaining phases.
+   - For each major finding, state one of: fix now, defer to named phase, or out-of-scope.
+   - If implementation choices change assumptions, update the relevant backlog/checklist so future phases stay accurate.
+
+5. Review output format standard:
+   - Findings first, ordered by severity.
+   - Each finding includes: why it matters now, whether it blocks this phase, and recommended next action.
+   - End with a short "deferred follow-ups" list mapped to future phases.
+
 ## Phase Exit Revalidation Rule (Applies To Every Phase)
 Before closing any phase as done:
 1. Re-check API spec, plan, and backlog for downstream impact from the completed work.

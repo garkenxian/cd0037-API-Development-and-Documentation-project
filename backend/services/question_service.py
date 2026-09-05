@@ -126,6 +126,33 @@ class QuestionService:
         return QuestionRepository.get_random(exclude_ids=exclude_ids)
 
     @staticmethod
+    def count_total_questions(exclude_ids=None):
+        """
+        Count total available questions in database
+        
+        Args:
+            exclude_ids: Optional list of question IDs to exclude from count
+            
+        Returns:
+            Integer count of available questions
+        """
+        return QuestionRepository.count_all(exclude_ids=exclude_ids)
+
+    @staticmethod
+    def count_questions_by_category(category_id, exclude_ids=None):
+        """
+        Count available questions in a specific category
+        
+        Args:
+            category_id: Category ID to count questions for
+            exclude_ids: Optional list of question IDs to exclude from count
+            
+        Returns:
+            Integer count of available questions in category
+        """
+        return QuestionRepository.count_by_category(category_id, exclude_ids=exclude_ids)
+
+    @staticmethod
     def update_question(question_id, **kwargs):
         """Update question fields"""
         question = QuestionRepository.get_by_id(question_id)

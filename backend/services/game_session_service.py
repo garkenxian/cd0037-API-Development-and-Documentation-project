@@ -3,7 +3,7 @@ GameSession Service - Business logic for game session operations
 Handles validation, transaction boundaries, and coordination
 """
 
-from data_access import db, GameSessionRepository
+from data_access import db, GameSessionRepository, GameSessionAnswerRepository
 
 
 class GameSessionService:
@@ -47,6 +47,67 @@ class GameSessionService:
             raise  # Re-raise DB error so it surfaces as 500, not client error
         
         return session
+
+    @staticmethod
+    def create_game_session_with_first_question(user_id, score, first_question, 
+                                                 category_id=None, number_of_questions=5):
+        """
+        Create a new game session and record the first question atomically.
+        
+        This ensures if either step fails, the entire transaction rolls back.
+        Prevents orphan sessions without a first stored question.
+        
+        Args:
+            user_id: User ID (must exist)
+            score: Score earned in game (typically 0)
+            first_question: Question object for first question
+            category_id: Optional category ID
+            number_of_questions: Total questions in this game session (default 5, max 20)
+            
+        Returns:
+            Tuple of (created_game_session, first_answer_record)
+            
+        Raises:
+            ValueError: If validation fails
+        """
+        from services import GameSessionAnswerService
+        
+        # Basic validation
+        if not user_id:
+            raise ValueError("User ID is required")
+        
+        if score is None or score < 0:
+            raise ValueError("Score must be a non-negative number")
+        
+        if not isinstance(number_of_questions, int) or number_of_questions < 1 or number_of_questions > 20:
+            raise ValueError("number_of_questions must be between 1 and 20")
+        
+        if not first_question:
+            raise ValueError("first_question is required")
+        
+        try:
+            # Create game session in same transaction
+            session = GameSessionRepository.create(user_id, score, category_id, number_of_questions)
+            # Flush to get session ID without committing
+            db.session.flush()
+            
+            # Record first question in same transaction
+            answer_record = GameSessionAnswerRepository.create(
+                game_session_id=session.id,
+                question_number=1,
+                question_id=first_question.id,
+                question_snapshot=first_question.question,
+                answer_snapshot=first_question.answer,
+                user_answer='',  # Empty for served but not yet answered
+                is_correct=False
+            )
+            
+            # Commit entire transaction atomically
+            db.session.commit()
+            return (session, answer_record)
+        except Exception as e:
+            db.session.rollback()
+            raise
 
     @staticmethod
     def get_game_session(session_id):
