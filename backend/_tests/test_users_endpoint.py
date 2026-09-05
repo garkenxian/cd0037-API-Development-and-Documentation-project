@@ -72,13 +72,16 @@ class UsersEndpointTestCase(unittest.TestCase):
         self.assertIn('error', data)
 
     def test_create_user_missing_email(self):
-        """Test creation fails with missing email"""
+        """Test creation succeeds with missing email (email now optional)"""
         response = self.client.post(
             '/users',
             json={'username': 'testuser'}
         )
         
-        self.assertEqual(response.status_code, 400)
+        self.assertEqual(response.status_code, 201)
+        data = response.get_json()
+        self.assertEqual(data['username'], 'testuser')
+        self.assertIsNone(data.get('email'))
 
     def test_create_user_empty_request(self):
         """Test creation fails with empty request body"""
@@ -86,22 +89,26 @@ class UsersEndpointTestCase(unittest.TestCase):
         self.assertEqual(response.status_code, 400)
 
     def test_create_user_short_username(self):
-        """Test creation fails with username < 3 chars"""
+        """Test creation succeeds with short username (no length validation)"""
         response = self.client.post(
             '/users',
             json={'username': 'ab', 'email': 'test@example.com'}
         )
         
-        self.assertEqual(response.status_code, 400)
+        self.assertEqual(response.status_code, 201)
+        data = response.get_json()
+        self.assertEqual(data['username'], 'ab')
 
     def test_create_user_invalid_email(self):
-        """Test creation fails with invalid email"""
+        """Test creation succeeds with invalid email format (no email validation)"""
         response = self.client.post(
             '/users',
             json={'username': 'testuser', 'email': 'notanemail'}
         )
         
-        self.assertEqual(response.status_code, 400)
+        self.assertEqual(response.status_code, 201)
+        data = response.get_json()
+        self.assertEqual(data['email'], 'notanemail')
 
     def test_create_user_duplicate_username(self):
         """Test creation fails with duplicate username"""
@@ -122,7 +129,7 @@ class UsersEndpointTestCase(unittest.TestCase):
         self.assertIn('error', data)
 
     def test_create_user_duplicate_email(self):
-        """Test creation fails with duplicate email"""
+        """Test creation succeeds with duplicate email (no email uniqueness check)"""
         # Create first user
         response1 = self.client.post(
             '/users',
@@ -130,12 +137,12 @@ class UsersEndpointTestCase(unittest.TestCase):
         )
         self.assertEqual(response1.status_code, 201)
 
-        # Try to create second user with same email
+        # Create second user with same email - should succeed since email not unique
         response2 = self.client.post(
             '/users',
             json={'username': 'user2', 'email': 'duplicate@example.com'}
         )
-        self.assertEqual(response2.status_code, 422)
+        self.assertEqual(response2.status_code, 201)
 
     def test_create_multiple_users_success(self):
         """Test creating multiple users successfully"""

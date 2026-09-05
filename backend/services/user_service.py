@@ -4,19 +4,20 @@ Handles validation, transaction boundaries, and coordination
 """
 
 from data_access import db, UserRepository
+from models import User
 
 
 class UserService:
     """Service layer for user operations"""
 
     @staticmethod
-    def create_user(username, email):
+    def create_user(username, email=None):
         """
         Create a new user with validation
         
         Args:
             username: Unique username string
-            email: User email address
+            email: User email address (optional)
             
         Returns:
             Created user object
@@ -28,18 +29,9 @@ class UserService:
         if not username or len(username.strip()) == 0:
             raise ValueError("Username cannot be empty")
         
-        if len(username) < 3:
-            raise ValueError("Username must be at least 3 characters")
-        
-        if not email or '@' not in email:
-            raise ValueError("Invalid email address")
-        
         # Check uniqueness
         if UserRepository.exists_by_username(username):
             raise ValueError(f"Username '{username}' already exists")
-        
-        if UserRepository.exists_by_email(email):
-            raise ValueError(f"Email '{email}' already registered")
         
         # Create via repository (no commit yet)
         user = UserRepository.create(username, email)
@@ -128,3 +120,49 @@ class UserService:
         except Exception as e:
             db.session.rollback()
             raise ValueError(f"Failed to delete user: {str(e)}")
+
+    @staticmethod
+    def get_all_users(sort_by='created_at', order='asc'):
+        """
+        Get all users (non-paginated) with optional sorting
+        
+        Args:
+            sort_by: Field to sort by ('created_at', 'total_score', 'games_played')
+            order: Sort order ('asc', 'desc')
+            
+        Returns:
+            List of all users
+        """
+        query = User.query
+        
+        if sort_by == 'created_at':
+            query = query.order_by(User.created_at.desc() if order == 'desc' else User.created_at)
+        elif sort_by == 'total_score':
+            query = query.order_by(User.total_score.desc() if order == 'desc' else User.total_score)
+        elif sort_by == 'games_played':
+            query = query.order_by(User.games_played.desc() if order == 'desc' else User.games_played)
+        
+        return query.all()
+
+    @staticmethod
+    def get_leaderboard(limit=10, offset=0):
+        """
+        Get top users ranked by total_score (descending)
+        
+        Args:
+            limit: Number of users to return
+            offset: Pagination offset
+            
+        Returns:
+            List of users sorted by total_score (highest first)
+        """
+        from models import User
+        users = User.query.order_by(User.total_score.desc()).offset(offset).limit(limit).all()
+        return users
+
+    @staticmethod
+    def get_total_users_count():
+        """Get total number of users in database"""
+        from models import User
+        return User.query.count()
+

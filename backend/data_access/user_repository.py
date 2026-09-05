@@ -11,13 +11,13 @@ class UserRepository:
     """Repository for User model - read/write operations only"""
 
     @staticmethod
-    def create(username, email):
+    def create(username, email=None):
         """
         Create a new user (no commit)
         
         Args:
             username: Unique username string
-            email: User email address
+            email: User email address (optional)
             
         Returns:
             User object (not yet persisted)

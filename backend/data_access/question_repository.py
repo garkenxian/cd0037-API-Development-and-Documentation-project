@@ -69,6 +69,18 @@ class QuestionRepository:
         return random.choice(questions) if questions else None
 
     @staticmethod
+    def get_random(exclude_ids=None):
+        """Get a random question from all categories"""
+        import random
+        query = Question.query
+        
+        if exclude_ids:
+            query = query.filter(~Question.id.in_(exclude_ids))
+        
+        questions = query.all()
+        return random.choice(questions) if questions else None
+
+    @staticmethod
     def delete_by_category(category_id):
         """Delete all questions in a category (no commit)"""
         Question.query.filter_by(category=category_id).delete()

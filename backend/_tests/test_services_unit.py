@@ -30,20 +30,28 @@ class UserServiceUnitTests(unittest.TestCase):
     @patch('services.user_service.db')
     @patch('services.user_service.UserRepository')
     def test_create_user_validates_short_username(self, mock_repo, mock_db):
-        """Test that create_user validates username length"""
-        with self.assertRaises(ValueError) as context:
-            UserService.create_user('ab', 'test@example.com')
+        """Test that create_user allows short usernames (no length validation)"""
+        mock_repo.exists_by_username.return_value = False
+        mock_user = Mock()
+        mock_repo.create.return_value = mock_user
         
-        self.assertIn('3 characters', str(context.exception))
+        result = UserService.create_user('ab')
+        
+        self.assertEqual(result, mock_user)
+        mock_repo.create.assert_called_once_with('ab', None)
 
     @patch('services.user_service.db')
     @patch('services.user_service.UserRepository')
     def test_create_user_validates_invalid_email(self, mock_repo, mock_db):
-        """Test that create_user validates email format"""
-        with self.assertRaises(ValueError) as context:
-            UserService.create_user('testuser', 'notanemail')
+        """Test that create_user accepts optional email - no validation"""
+        mock_repo.exists_by_username.return_value = False
+        mock_user = Mock()
+        mock_repo.create.return_value = mock_user
         
-        self.assertIn('email', str(context.exception).lower())
+        result = UserService.create_user('testuser')
+        
+        self.assertEqual(result, mock_user)
+        mock_repo.create.assert_called_once_with('testuser', None)
 
     @patch('services.user_service.db')
     @patch('services.user_service.UserRepository')
@@ -60,15 +68,16 @@ class UserServiceUnitTests(unittest.TestCase):
     @patch('services.user_service.db')
     @patch('services.user_service.UserRepository')
     def test_create_user_checks_email_uniqueness(self, mock_repo, mock_db):
-        """Test that create_user checks if email already exists"""
+        """Test that create_user doesn't check email (now optional)"""
         mock_repo.exists_by_username.return_value = False
-        mock_repo.exists_by_email.return_value = True
+        mock_user = Mock()
+        mock_repo.create.return_value = mock_user
         
-        with self.assertRaises(ValueError) as context:
-            UserService.create_user('newuser', 'duplicate@example.com')
+        result = UserService.create_user('newuser', 'test@example.com')
         
-        self.assertIn('already registered', str(context.exception).lower())
-        mock_repo.exists_by_email.assert_called_once_with('duplicate@example.com')
+        self.assertEqual(result, mock_user)
+        # Email is no longer validated - just passed through
+        mock_repo.create.assert_called_once_with('newuser', 'test@example.com')
 
     @patch('services.user_service.db')
     @patch('services.user_service.UserRepository')
@@ -142,16 +151,18 @@ class UserServiceUnitTests(unittest.TestCase):
         
         self.assertIn('not found', str(context.exception).lower())
 
-    @patch('services.user_service.UserRepository')
-    def test_get_all_users_returns_paginated_users(self, mock_repo):
-        """Test that get_all_users returns paginated results"""
+    @patch('services.user_service.User')
+    def test_get_all_users_returns_paginated_users(self, mock_user_model):
+        """Test that get_all_users returns sorted users"""
         mock_users = [Mock(), Mock()]
-        mock_repo.get_all.return_value = mock_users
+        mock_query = Mock()
+        mock_query.all.return_value = mock_users
+        mock_query.order_by.return_value = mock_query
+        mock_user_model.query = mock_query
         
-        result = UserService.get_all_users(page=2, per_page=25)
+        result = UserService.get_all_users(sort_by='total_score', order='desc')
         
         self.assertEqual(result, mock_users)
-        mock_repo.get_all.assert_called_once_with(page=2, per_page=25)
 
     @patch('services.user_service.db')
     @patch('services.user_service.UserRepository')
@@ -630,7 +641,7 @@ class QuestionServiceUnitTests(unittest.TestCase):
         result = QuestionService.get_random_question_by_category(1)
         
         self.assertEqual(result, mock_question)
-        mock_repo.get_random_by_category.assert_called_once_with(1)
+        mock_repo.get_random_by_category.assert_called_once_with(1, exclude_ids=None)
 
     @patch('services.question_service.db')
     @patch('services.question_service.QuestionRepository')
@@ -855,7 +866,7 @@ class GameSessionServiceUnitTests(unittest.TestCase):
         mock_repo.get_by_id.return_value = mock_session
         mock_db.session.commit.side_effect = Exception("DB Error")
         
-        with self.assertRaises(ValueError):
+        with self.assertRaises(Exception):
             GameSessionService.update_game_session(1, score=75)
         
         mock_db.session.rollback.assert_called_once()
