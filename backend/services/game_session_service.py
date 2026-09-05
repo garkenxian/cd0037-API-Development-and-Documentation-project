@@ -124,9 +124,9 @@ class GameSessionService:
         try:
             GameSessionRepository.update(session, **kwargs)
             db.session.commit()
-        except Exception as e:
+        except Exception:
             db.session.rollback()
-            raise ValueError(f"Failed to update game session: {str(e)}")
+            raise
         
         return session
 
