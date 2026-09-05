@@ -941,6 +941,7 @@ Tracks overall game session information
 - user_id (FK → users)
 - category_id (FK → categories, nullable - NULL means all categories)
 - score (integer) - points earned in this game
+- number_of_questions (integer) - total questions in this game session (1-20)
 - date_played (timestamp) - when the game was played
 ```
 

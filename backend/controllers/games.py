@@ -165,12 +165,14 @@ def get_game(game_session_id):
                 }), 200
             else:
                 # All questions answered, game completed
+                # Calculate total_answered from next_question_number (which is now beyond the last question)
+                total_answered = next_question_number - 1
                 return jsonify({
                     'game_session_id': game_session.id,
                     'status': 'completed',
                     'current_score': {
                         'correct': GameSessionAnswerService.get_correct_count(game_session_id),
-                        'total_answered': GameSessionAnswerService.get_max_question_number(game_session_id),
+                        'total_answered': total_answered,
                         'total_questions': GameSessionAnswerService.get_total_questions(game_session_id)
                     },
                     'success': True
