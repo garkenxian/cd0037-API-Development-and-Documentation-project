@@ -78,6 +78,78 @@ Before closing any phase as done:
 ## Phase 0 - Baseline Lock and Alignment
 Goal: freeze reality before deeper changes.
 
+### Phase 0 Status (2026-09-05)
+
+Review status:
+1. Reviewed against active controller routes and current frontend API calls.
+2. Coverage baselines refreshed from fresh local command runs.
+
+Coverage baselines (fresh run):
+1. Backend overall coverage: 93.08% (281 passed tests).
+2. Frontend overall coverage:
+   - Statements: 35.77%
+   - Branches: 10.34%
+   - Functions: 27.14%
+   - Lines: 36.13%
+
+Per-file baseline highlights:
+1. Backend files below 80%:
+   - `controllers/questions.py`: 78.79%
+2. Frontend `src/components` files below 80%:
+   - `FormView.js`: 33.33%
+   - `Header.js`: 16.66%
+   - `QuestionView.js`: 32.50%
+   - `QuizView.js`: 30.76%
+   - `Search.js`: 62.50%
+   - `Question.js`: 71.42%
+
+Reproducible commands (from repo root):
+1. Backend coverage: `cd backend && python -m pytest --cov=. --cov-report=term --cov-report=json:coverage_backend.json -q`
+2. Frontend coverage: `cd frontend && CI=true npm test -- --coverage --watchAll=false --passWithNoTests`
+
+Active endpoint contracts (from controllers):
+1. Categories
+   - `GET /categories`
+   - `GET /categories/<int:category_id>`
+   - `POST /categories`
+   - `PUT /categories/<int:category_id>`
+   - `DELETE /categories/<int:category_id>`
+2. Questions
+   - `GET /questions`
+   - `GET /questions/<int:question_id>`
+   - `POST /questions`
+   - `DELETE /questions/<int:question_id>`
+3. Games
+   - `POST /games`
+   - `POST /games/<int:game_session_id>/<int:question_number>`
+   - `GET /games/<int:game_session_id>`
+4. Users
+   - `GET /users`
+   - `GET /users/<int:user_id>`
+   - `POST /users`
+   - `GET /users/leaderboard`
+
+Contract mismatch checklist (code vs docs vs frontend):
+1. [x] Code vs API spec: Endpoint count mismatch.
+   - Spec states 17 endpoints including `GET /categories/<id>/questions`.
+   - Active controllers expose 16 routes and do not define `GET /categories/<id>/questions`.
+2. [x] Code vs API spec: Error schema mismatch.
+   - Spec requires `{ "success": false, "error": <code>, "message": "..." }`.
+   - Current error handlers return minimal payloads like `{ "error": "Bad Request" }`.
+3. [x] Code vs API spec: Game determinism mismatch.
+   - Answer validation path still uses random question fetch and no persisted served-question map.
+4. [x] Frontend vs API spec/code: Legacy endpoint usage in quiz flow.
+   - `QuizView.js` still calls `POST /quizzes`.
+5. [x] Frontend vs API spec/code: Legacy search contract usage.
+   - `QuestionView.js` still uses `POST /questions` for search instead of `GET /questions?search=...`.
+6. [x] Docs terminology drift remains in parts of docs/frontend comments (`quiz` vs `game`).
+
+Phase 0 task completion:
+1. [x] Record current backend and frontend coverage baselines in a single status section.
+2. [x] Confirm active endpoint contracts from controllers and compare to `backend/API_SPECIFICATION.md`.
+3. [x] Create a contract mismatch checklist (code vs docs vs frontend).
+4. [x] Add a quality gate checklist to PR template (coverage, tests, docs parity, security checks).
+
 Tasks:
 1. Record current backend and frontend coverage baselines in a single status section.
 2. Confirm active endpoint contracts from controllers and compare to `backend/API_SPECIFICATION.md`.
