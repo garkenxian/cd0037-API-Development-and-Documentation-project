@@ -92,12 +92,12 @@ class UsersEndpointTestCase(unittest.TestCase):
         """Test creation succeeds with short username (no length validation)"""
         response = self.client.post(
             '/users',
-            json={'username': 'ab', 'email': 'test@example.com'}
+            json={'username': 'abc', 'email': 'test@example.com'}
         )
         
         self.assertEqual(response.status_code, 201)
         data = response.get_json()
-        self.assertEqual(data['username'], 'ab')
+        self.assertEqual(data['username'], 'abc')
 
     def test_create_user_invalid_email(self):
         """Test creation succeeds with invalid email format (no email validation)"""

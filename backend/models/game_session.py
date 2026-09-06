@@ -1,7 +1,7 @@
 """GameSession model - Pure ORM definition"""
 
 from datetime import datetime, timezone
-from sqlalchemy import Column, Integer, ForeignKey, DateTime, Boolean
+from sqlalchemy import Column, Integer, ForeignKey, DateTime, Boolean, CheckConstraint
 from . import db
 
 
@@ -11,6 +11,12 @@ class GameSession(db.Model):
     Use GameSessionRepository and GameSessionService for persistence operations.
     """
     __tablename__ = 'game_sessions'
+    
+    # Table constraints
+    __table_args__ = (
+        CheckConstraint('score >= 0', name='ck_score_non_negative'),
+        CheckConstraint('number_of_questions >= 1 AND number_of_questions <= 20', name='ck_number_of_questions_range'),
+    )
 
     id = Column(Integer, primary_key=True)
     user_id = Column(Integer, ForeignKey('users.id'), nullable=False)

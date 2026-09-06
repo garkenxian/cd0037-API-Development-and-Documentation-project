@@ -92,7 +92,7 @@ class CategoriesExceptionHandlingTests(unittest.TestCase):
         db.session.flush()
         
         # Add question
-        QuestionRepository.create('Q1?', 'A1', cat.id, 'easy')
+        QuestionRepository.create('Q1?', 'A1', cat.id, 1)
         db.session.commit()
         
         response = self.client.delete(f'/categories/{cat.id}')
@@ -152,7 +152,7 @@ class QuestionsExceptionHandlingTests(unittest.TestCase):
         """Test GET /questions"""
         # Create some questions
         for i in range(3):
-            QuestionRepository.create(f'Q{i}?', f'A{i}', self.cat.id, 'easy')
+            QuestionRepository.create(f'Q{i}?', f'A{i}', self.cat.id, 1)
         db.session.commit()
         
         response = self.client.get('/questions')
@@ -163,7 +163,7 @@ class QuestionsExceptionHandlingTests(unittest.TestCase):
 
     def test_get_question_success(self):
         """Test GET /questions/<id>"""
-        q = QuestionRepository.create('Q1?', 'A1', self.cat.id, 'easy')
+        q = QuestionRepository.create('Q1?', 'A1', self.cat.id, 1)
         db.session.commit()
         
         response = self.client.get(f'/questions/{q.id}')
@@ -173,7 +173,7 @@ class QuestionsExceptionHandlingTests(unittest.TestCase):
 
     def test_delete_question_success(self):
         """Test DELETE /questions/<id>"""
-        q = QuestionRepository.create('Q1?', 'A1', self.cat.id, 'easy')
+        q = QuestionRepository.create('Q1?', 'A1', self.cat.id, 1)
         db.session.commit()
         
         response = self.client.delete(f'/questions/{q.id}')

@@ -37,11 +37,11 @@ class GamesEndpointTests(unittest.TestCase):
         self.cat_science = CategoryRepository.create('Science')
         db.session.flush()
         
-        self.q1 = QuestionRepository.create('Q1?', 'Water', self.cat_science.id, 'easy')
-        self.q2 = QuestionRepository.create('Q2?', 'Answer2', self.cat_science.id, 'medium')
-        self.q3 = QuestionRepository.create('Q3?', 'Answer3', self.cat_science.id, 'hard')
-        self.q4 = QuestionRepository.create('Q4?', 'Answer4', self.cat_science.id, 'easy')
-        self.q5 = QuestionRepository.create('Q5?', 'Answer5', self.cat_science.id, 'medium')
+        self.q1 = QuestionRepository.create('Q1?', 'Water', self.cat_science.id, 1)
+        self.q2 = QuestionRepository.create('Q2?', 'Answer2', self.cat_science.id, 3)
+        self.q3 = QuestionRepository.create('Q3?', 'Answer3', self.cat_science.id, 5)
+        self.q4 = QuestionRepository.create('Q4?', 'Answer4', self.cat_science.id, 1)
+        self.q5 = QuestionRepository.create('Q5?', 'Answer5', self.cat_science.id, 3)
         db.session.commit()
 
     def tearDown(self):

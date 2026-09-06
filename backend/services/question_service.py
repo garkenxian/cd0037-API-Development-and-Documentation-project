@@ -30,23 +30,34 @@ class QuestionService:
         # Validation
         if not question_text or len(question_text.strip()) == 0:
             raise ValueError("Question text cannot be empty")
+
+        normalized_question_text = question_text.strip()
+        if len(normalized_question_text) > 500:
+            raise ValueError("Question text must be between 1 and 500 characters")
         
         if not answer or len(answer.strip()) == 0:
             raise ValueError("Answer cannot be empty")
+
+        normalized_answer = answer.strip()
+        if len(normalized_answer) > 500:
+            raise ValueError("Answer must be between 1 and 500 characters")
         
         if not category:
             raise ValueError("Category ID is required")
         
-        if not difficulty or difficulty < 1 or difficulty > 5:
+        if not isinstance(difficulty, int) or difficulty < 1 or difficulty > 5:
             raise ValueError("Difficulty must be between 1 and 5")
         
         if rating is None:
             rating = 0
+
+        if not isinstance(rating, (int, float)) or rating < 0.0 or rating > 5.0:
+            raise ValueError("Rating must be between 0.0 and 5.0")
         
         # Create via repository (no commit yet)
         question = QuestionRepository.create(
-            question_text=question_text,
-            answer=answer,
+            question_text=normalized_question_text,
+            answer=normalized_answer,
             category=category,
             difficulty=difficulty,
             rating=rating

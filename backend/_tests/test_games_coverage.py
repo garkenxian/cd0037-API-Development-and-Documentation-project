@@ -34,11 +34,11 @@ class GamesErrorHandlingTests(unittest.TestCase):
         self.cat1 = CategoryRepository.create('Science')
         db.session.flush()
         # Create at least 5 questions for tests requesting 5-question games
-        self.q1 = QuestionRepository.create('Test Q1?', 'Water', self.cat1.id, 'easy')
-        self.q2 = QuestionRepository.create('Test Q2?', 'Earth', self.cat1.id, 'medium')
-        self.q3 = QuestionRepository.create('Test Q3?', 'Fire', self.cat1.id, 'hard')
-        self.q4 = QuestionRepository.create('Test Q4?', 'Air', self.cat1.id, 'easy')
-        self.q5 = QuestionRepository.create('Test Q5?', 'Ether', self.cat1.id, 'medium')
+        self.q1 = QuestionRepository.create('Test Q1?', 'Water', self.cat1.id, 1)
+        self.q2 = QuestionRepository.create('Test Q2?', 'Earth', self.cat1.id, 3)
+        self.q3 = QuestionRepository.create('Test Q3?', 'Fire', self.cat1.id, 5)
+        self.q4 = QuestionRepository.create('Test Q4?', 'Air', self.cat1.id, 1)
+        self.q5 = QuestionRepository.create('Test Q5?', 'Ether', self.cat1.id, 3)
         db.session.commit()
 
     def tearDown(self):

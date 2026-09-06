@@ -1,6 +1,6 @@
 """Question model - Pure ORM definition"""
 
-from sqlalchemy import Column, Integer, String, Float, ForeignKey
+from sqlalchemy import Column, Integer, String, Float, ForeignKey, CheckConstraint
 from . import db
 
 
@@ -10,6 +10,14 @@ class Question(db.Model):
     Pure ORM definition - no business logic
     """
     __tablename__ = 'questions'
+    
+    # Table constraints
+    __table_args__ = (
+        CheckConstraint('length(question) >= 1 AND length(question) <= 500', name='ck_question_length'),
+        CheckConstraint('length(answer) >= 1 AND length(answer) <= 500', name='ck_answer_length'),
+        CheckConstraint('difficulty >= 1 AND difficulty <= 5', name='ck_difficulty_range'),
+        CheckConstraint('rating >= 0.0 AND rating <= 5.0', name='ck_rating_range'),
+    )
 
     id = Column(Integer, primary_key=True)
     question = Column(String, nullable=False)

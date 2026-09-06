@@ -28,13 +28,17 @@ class UserService:
         # Validation
         if not username or len(username.strip()) == 0:
             raise ValueError("Username cannot be empty")
+
+        normalized_username = username.strip()
+        if len(normalized_username) < 3 or len(normalized_username) > 50:
+            raise ValueError("Username must be between 3 and 50 characters")
         
         # Check uniqueness
-        if UserRepository.exists_by_username(username):
-            raise ValueError(f"Username '{username}' already exists")
+        if UserRepository.exists_by_username(normalized_username):
+            raise ValueError(f"Username '{normalized_username}' already exists")
         
         # Create via repository (no commit yet)
-        user = UserRepository.create(username, email)
+        user = UserRepository.create(normalized_username, email)
         
         # Transaction boundary - commit here
         try:
@@ -60,11 +64,6 @@ class UserService:
         if not user:
             raise ValueError(f"User '{username}' not found")
         return user
-
-    @staticmethod
-    def get_all_users(page=1, per_page=50):
-        """Get all users with pagination"""
-        return UserRepository.get_all(page=page, per_page=per_page)
 
     @staticmethod
     def update_user_score(user_id, score_increment):

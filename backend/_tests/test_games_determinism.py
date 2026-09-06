@@ -44,11 +44,11 @@ class GameDeterminismTests(unittest.TestCase):
         self.cat_history = CategoryRepository.create('History')
         db.session.flush()
         
-        self.q1 = QuestionRepository.create('What is H2O?', 'Water', self.cat_science.id, 'easy')
-        self.q2 = QuestionRepository.create('What is H2SO4?', 'Sulfuric acid', self.cat_science.id, 'medium')
-        self.q3 = QuestionRepository.create('What year did Rome fall?', '476', self.cat_history.id, 'hard')
-        self.q4 = QuestionRepository.create('Who was Caesar?', 'Roman Emperor', self.cat_history.id, 'medium')
-        self.q5 = QuestionRepository.create('What is CO2?', 'Carbon dioxide', self.cat_science.id, 'easy')
+        self.q1 = QuestionRepository.create('What is H2O?', 'Water', self.cat_science.id, 1)
+        self.q2 = QuestionRepository.create('What is H2SO4?', 'Sulfuric acid', self.cat_science.id, 3)
+        self.q3 = QuestionRepository.create('What year did Rome fall?', '476', self.cat_history.id, 5)
+        self.q4 = QuestionRepository.create('Who was Caesar?', 'Roman Emperor', self.cat_history.id, 3)
+        self.q5 = QuestionRepository.create('What is CO2?', 'Carbon dioxide', self.cat_science.id, 1)
         db.session.commit()
 
     def tearDown(self):
@@ -505,8 +505,8 @@ class GameSessionAnswerServiceTests(unittest.TestCase):
         self.cat = CategoryRepository.create('Science')
         db.session.flush()
         
-        self.q1 = QuestionRepository.create('What is H2O?', 'Water', self.cat.id, 'easy')
-        self.q2 = QuestionRepository.create('What is CO2?', 'Carbon dioxide', self.cat.id, 'easy')
+        self.q1 = QuestionRepository.create('What is H2O?', 'Water', self.cat.id, 1)
+        self.q2 = QuestionRepository.create('What is CO2?', 'Carbon dioxide', self.cat.id, 1)
         db.session.commit()
         
         # Create game
@@ -600,7 +600,7 @@ class GameSessionAnswerServiceTests(unittest.TestCase):
             'Who said "I have a dream"?',
             'Dr. Martin Luther King Jr.',
             self.cat.id,
-            'medium'
+            3
         )
         db.session.commit()
         

@@ -34,9 +34,9 @@ class GameSessionAnswerRepositoryTests(unittest.TestCase):
         self.category = CategoryRepository.create('Science')
         db.session.flush()
         
-        self.q1 = QuestionRepository.create('Q1?', 'Answer1', self.category.id, 'easy')
-        self.q2 = QuestionRepository.create('Q2?', 'Answer2', self.category.id, 'medium')
-        self.q3 = QuestionRepository.create('Q3?', 'Answer3', self.category.id, 'hard')
+        self.q1 = QuestionRepository.create('Q1?', 'Answer1', self.category.id, 1)
+        self.q2 = QuestionRepository.create('Q2?', 'Answer2', self.category.id, 3)
+        self.q3 = QuestionRepository.create('Q3?', 'Answer3', self.category.id, 5)
         db.session.commit()
         
         # Create a game session

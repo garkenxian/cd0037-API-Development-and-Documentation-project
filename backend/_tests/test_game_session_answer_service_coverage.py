@@ -33,7 +33,7 @@ class GameSessionAnswerServiceCoverageTests(unittest.TestCase):
         self.category = CategoryRepository.create('Science')
         db.session.flush()
         
-        self.q1 = QuestionRepository.create('Q1?', 'Answer1', self.category.id, 'easy')
+        self.q1 = QuestionRepository.create('Q1?', 'Answer1', self.category.id, 1)
         db.session.commit()
         
         # Create a game session

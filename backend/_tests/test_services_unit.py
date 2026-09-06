@@ -30,15 +30,12 @@ class UserServiceUnitTests(unittest.TestCase):
     @patch('services.user_service.db')
     @patch('services.user_service.UserRepository')
     def test_create_user_validates_short_username(self, mock_repo, mock_db):
-        """Test that create_user allows short usernames (no length validation)"""
-        mock_repo.exists_by_username.return_value = False
-        mock_user = Mock()
-        mock_repo.create.return_value = mock_user
-        
-        result = UserService.create_user('ab')
-        
-        self.assertEqual(result, mock_user)
-        mock_repo.create.assert_called_once_with('ab', None)
+        """Test that create_user rejects usernames shorter than 3 chars"""
+        with self.assertRaises(ValueError) as context:
+            UserService.create_user('ab')
+
+        self.assertIn('between 3 and 50', str(context.exception).lower())
+        mock_repo.create.assert_not_called()
 
     @patch('services.user_service.db')
     @patch('services.user_service.UserRepository')
