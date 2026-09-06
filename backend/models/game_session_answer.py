@@ -1,7 +1,7 @@
 """GameSessionAnswer model - Immutable audit trail for game answers"""
 
 from datetime import datetime, timezone
-from sqlalchemy import Column, Integer, String, Boolean, ForeignKey, DateTime, UniqueConstraint
+from sqlalchemy import Column, Integer, String, Boolean, ForeignKey, DateTime, UniqueConstraint, CheckConstraint
 from . import db
 
 
@@ -22,6 +22,9 @@ class GameSessionAnswer(db.Model):
     # Constraints
     __table_args__ = (
         UniqueConstraint('game_session_id', 'question_number', name='uq_game_question_number'),
+        CheckConstraint('question_number >= 1', name='ck_question_number_positive'),
+        CheckConstraint('length(question_snapshot) >= 1', name='ck_question_snapshot_not_empty'),
+        CheckConstraint('length(answer_snapshot) >= 1', name='ck_answer_snapshot_not_empty'),
     )
 
     id = Column(Integer, primary_key=True)

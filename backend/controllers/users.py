@@ -6,6 +6,19 @@ from services import UserService
 users_bp = Blueprint('users', __name__, url_prefix='/users')
 
 
+def _is_constraint_violation(error_text):
+    """Return True when an error message indicates DB/domain constraint violation."""
+    text = error_text.lower()
+    return any(token in text for token in [
+        'already exists',
+        'already registered',
+        'must be between 3 and 50',
+        'unique constraint',
+        'integrityerror',
+        'constraint failed'
+    ])
+
+
 @users_bp.route('', methods=['GET'])
 def get_users():
     """
@@ -27,7 +40,7 @@ def get_users():
         valid_orders = {'asc', 'desc'}
         
         if sort_by not in valid_sorts or order not in valid_orders:
-            abort(400)
+            abort(400, description=f"Invalid sort or order parameter. Valid sorts: {valid_sorts}. Valid orders: {valid_orders}")
         
         users = UserService.get_all_users(sort_by=sort_by, order=order)
         
@@ -39,7 +52,7 @@ def get_users():
     except Exception as e:
         if hasattr(e, 'code') and 400 <= e.code < 500:
             raise
-        abort(500)
+        abort(500, description="Internal server error while retrieving users")
 
 
 @users_bp.route('/<int:user_id>', methods=['GET'])
@@ -62,11 +75,11 @@ def get_user(user_id):
             'success': True
         }), 200
     except ValueError:
-        abort(404)
+        abort(404, description=f"User with id {user_id} not found")
     except Exception as e:
         if hasattr(e, 'code') and 400 <= e.code < 500:
             raise
-        abort(500)
+        abort(500, description="Internal server error while retrieving user")
 
 
 @users_bp.route('', methods=['POST'])
@@ -82,13 +95,13 @@ def create_user():
 
     # Validate required fields
     if not body:
-        abort(400)
+        abort(400, description="Request body must be JSON")
     
     username = body.get('username')
     email = body.get('email')
 
     if not username:
-        abort(400)
+        abort(400, description="Missing required field: 'username'")
 
     try:
         user = UserService.create_user(username, email)
@@ -96,17 +109,19 @@ def create_user():
     except ValueError as e:
         error_msg = str(e).lower()
         # Distinguish between missing/invalid fields (400) and constraint violations (422)
-        if 'already exists' in error_msg or 'already registered' in error_msg:
-            # Conflict - duplicate username
-            abort(422)
+        if _is_constraint_violation(error_msg):
+            if 'already exists' in error_msg or 'already registered' in error_msg:
+                abort(422, description=f"Username '{username}' already exists")
+            abort(422, description=str(e))
         else:
             # Bad request - invalid data
-            abort(400)
+            abort(400, description=str(e))
     except Exception as e:
         if hasattr(e, 'code') and 400 <= e.code < 500:
             raise
-        # Database or other unexpected errors
-        abort(500)
+        if _is_constraint_violation(str(e)):
+            abort(422, description="User data violates validation constraints")
+        abort(500, description="Internal server error while creating user")
 
 
 @users_bp.route('/leaderboard', methods=['GET'])
@@ -126,7 +141,7 @@ def get_leaderboard():
         offset = request.args.get('offset', 0, type=int)
         
         if limit < 1 or offset < 0:
-            abort(400)
+            abort(400, description=f"Invalid limit or offset. Limit must be >= 1, offset must be >= 0")
         
         users = UserService.get_leaderboard(limit=limit, offset=offset)
         
@@ -150,8 +165,8 @@ def get_leaderboard():
             'success': True
         }), 200
     except ValueError:
-        abort(400)
+        abort(400, description="Invalid limit or offset parameters")
     except Exception as e:
         if hasattr(e, 'code') and 400 <= e.code < 500:
             raise
-        abort(500)
+        abort(500, description="Internal server error while retrieving leaderboard")

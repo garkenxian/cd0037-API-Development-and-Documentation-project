@@ -27,7 +27,7 @@ def create_game():
         
         # Validate body exists
         if not body:
-            abort(400)
+            abort(400, description="Request body must be JSON")
         
         user_id = body.get('user_id')
         category_id = body.get('category_id')
@@ -35,24 +35,24 @@ def create_game():
         
         # Validate required fields
         if user_id is None or category_id is None:
-            abort(400)
+            abort(400, description="Missing required fields: 'user_id', 'category_id'")
         
         # Validate user exists
         try:
             user = UserService.get_user(user_id)
         except ValueError:
-            abort(404)
+            abort(404, description=f"User with id {user_id} not found")
         
         # Validate category exists (if not 0 for all)
         if category_id != 0:
             try:
                 CategoryService.get_category(category_id)
             except ValueError:
-                abort(404)
+                abort(404, description=f"Category with id {category_id} not found")
         
         # Validate number_of_questions
         if not isinstance(number_of_questions, int) or number_of_questions < 1 or number_of_questions > 20:
-            abort(422)
+            abort(422, description="number_of_questions must be an integer between 1 and 20")
         
         # Validate capacity: ensure enough unique questions exist for requested count
         if category_id == 0:
@@ -61,9 +61,7 @@ def create_game():
             available_questions = QuestionService.count_questions_by_category(category_id)
         
         if available_questions < number_of_questions:
-            return jsonify({
-                'message': f'Insufficient unique questions available. Requested: {number_of_questions}, Available: {available_questions}'
-            }), 422
+            abort(422, description=f'Insufficient unique questions available. Requested: {number_of_questions}, Available: {available_questions}')
         
         # Get first question - deterministically selected
         if category_id == 0:
@@ -84,9 +82,9 @@ def create_game():
                 number_of_questions=number_of_questions
             )
         except ValueError as e:
-            abort(400)
+            abort(400, description=str(e))
         except Exception as e:
-            abort(500)
+            abort(500, description="Internal server error while creating game")
         
         # Return game session with first question (no answer field)
         question_data = {
@@ -109,12 +107,12 @@ def create_game():
             'success': True
         }), 201
     except ValueError:
-        abort(400)
+        abort(400, description="Invalid request parameters")
     except Exception as e:
         # Re-raise HTTPException for 4xx errors, otherwise 500
         if hasattr(e, 'code') and 400 <= e.code < 500:
             raise
-        abort(500)
+        abort(500, description="Internal server error while processing game creation")
 
 
 @games_bp.route('/games/<int:game_session_id>/<int:question_number>', methods=['POST'])
@@ -139,12 +137,12 @@ def answer_question(game_session_id, question_number):
         
         # Validate body and user_answer
         if not body or 'user_answer' not in body:
-            abort(400)
+            abort(400, description="Request body must contain 'user_answer' field")
         
         user_answer = body.get('user_answer')
         
         if not isinstance(user_answer, str) or not user_answer.strip():
-            abort(400)
+            abort(400, description="user_answer must be a non-empty string")
         
         # Get game session
         game_session = db.session.query(GameSession).get(game_session_id)
@@ -153,7 +151,7 @@ def answer_question(game_session_id, question_number):
         
         # Validate question_number is in range [1..N]
         if question_number < 1 or question_number > game_session.number_of_questions:
-            abort(422)
+            abort(422, description=f"question_number must be between 1 and {game_session.number_of_questions}")
         
         # SEQUENCE VALIDATION: Enforce that this is the next expected question
         next_expected = GameSessionAnswerService.get_next_question_number(
@@ -163,11 +161,11 @@ def answer_question(game_session_id, question_number):
         
         if next_expected is None:
             # All questions already answered - reject
-            abort(422)
+            abort(422, description="All questions for this game have already been answered")
         
         if question_number != next_expected:
             # Out-of-order answer - reject with 422
-            abort(422)
+            abort(422, description=f"Expected answer for question {next_expected}, but received answer for question {question_number}")
         
         # Get the existing answer record (should exist and have empty user_answer)
         existing_answer = GameSessionAnswerRepository.get_by_game_and_question(game_session_id, question_number)
@@ -176,22 +174,18 @@ def answer_question(game_session_id, question_number):
             # Record should exist (question was pre-served at game creation)
             # If missing, this indicates legacy/corrupt session data inconsistency
             # Return 409 Conflict to indicate state machine violation
-            return jsonify({
-                'message': f'Session conflict: Expected answer record for question {question_number} not found in audit trail. This may indicate a corrupted or legacy session.',
-                'game_session_id': game_session_id,
-                'question_number': question_number
-            }), 409
+            abort(409, description=f'Session conflict: Expected answer record for question {question_number} not found in audit trail. This may indicate a corrupted or legacy session.')
         
         # Verify it's not already answered
         if existing_answer.user_answer and existing_answer.user_answer.strip():
             # Already answered - reject as duplicate
-            abort(422)
+            abort(422, description=f"Question {question_number} has already been answered")
         
         # Get the question object for this answer record
         from models import Question
         question_obj = db.session.query(Question).get(existing_answer.question_id)
         if not question_obj:
-            abort(404)
+            abort(404, description=f"Question with id {existing_answer.question_id} not found")
         
         # Update the existing record with the user's answer
         try:
@@ -204,10 +198,10 @@ def answer_question(game_session_id, question_number):
             db.session.commit()
         except ValueError as e:
             db.session.rollback()
-            abort(400)
+            abort(400, description=str(e))
         except Exception as e:
             db.session.rollback()
-            abort(500)
+            abort(500, description="Internal server error while recording answer")
         
         # Get the updated answer record
         answer_record = GameSessionAnswerRepository.get_by_game_and_question(game_session_id, question_number)
@@ -307,7 +301,7 @@ def answer_question(game_session_id, question_number):
                         except Exception as e:
                             # Next-question persistence failure is a hard failure
                             db.session.rollback()
-                            abort(500)
+                            abort(500, description="Internal server error while preparing next question")
                 
                 # Only set next_question_number if we successfully have a question
                 # This prevents partial-success responses with null question
@@ -324,7 +318,7 @@ def answer_question(game_session_id, question_number):
                     # Cannot select next question - this should not happen in normal flow
                     # but if it does, treat as error condition
                     db.session.rollback()
-                    abort(500)
+                    abort(500, description="Unable to select next question. Database may be empty or no questions available.")
             else:
                 response['next_question_number'] = None
                 response['question'] = None
@@ -333,7 +327,7 @@ def answer_question(game_session_id, question_number):
     except Exception as e:
         if hasattr(e, 'code') and 400 <= e.code < 500:
             raise
-        abort(500)
+        abort(500, description="Internal server error while processing answer")
 
 
 @games_bp.route('/games/<int:game_session_id>', methods=['GET'])
@@ -386,13 +380,13 @@ def get_game_state(game_session_id):
                 break
         
         if not next_answer_record:
-            abort(404)
+            abort(404, description=f"Question record for game {game_session_id} question {next_question_number} not found")
         
         # Fetch the actual Question object
         from models import Question
         question = db.session.query(Question).get(next_answer_record.question_id)
         if not question:
-            abort(404)
+            abort(404, description=f"Question with id {next_answer_record.question_id} not found")
         
         question_data = {
             'id': question.id,
@@ -416,4 +410,4 @@ def get_game_state(game_session_id):
     except Exception as e:
         if hasattr(e, 'code') and 400 <= e.code < 500:
             raise
-        abort(500)
+        abort(500, description="Internal server error while retrieving game state")

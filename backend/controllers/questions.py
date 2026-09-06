@@ -6,6 +6,19 @@ from services import QuestionService, CategoryService
 questions_bp = Blueprint('questions', __name__, url_prefix='/questions')
 
 
+def _is_constraint_violation(error_text):
+    """Return True when an error message indicates DB/domain constraint violation."""
+    text = error_text.lower()
+    return any(token in text for token in [
+        'already exists',
+        'foreign key',
+        'not found',
+        'unique constraint',
+        'integrityerror',
+        'constraint failed'
+    ])
+
+
 @questions_bp.route('', methods=['GET'])
 def get_questions():
     """
@@ -19,11 +32,15 @@ def get_questions():
     Errors: 404 (page out of range), 400 (invalid page)
     """
     try:
-        page = request.args.get('page', 1, type=int)
+        try:
+            page = request.args.get('page', 1, type=int)
+        except (ValueError, TypeError):
+            abort(400, description="Page parameter must be an integer")
+        
         search = request.args.get('search', None, type=str)
         
         if page < 1:
-            abort(400)
+            abort(400, description="Page number must be >= 1")
         
         if search:
             # Search questions
@@ -33,7 +50,7 @@ def get_questions():
             questions_page = QuestionService.get_all_questions(page=page)
         
         if page > questions_page.pages and questions_page.total > 0:
-            abort(404)
+            abort(404, description=f"Page {page} out of range. Total pages: {questions_page.pages}")
         
         # Get all categories for response
         all_categories = CategoryService.get_all_categories_list()
@@ -47,10 +64,10 @@ def get_questions():
             'categories': categories_dict,
             'success': True
         }), 200
-    except ValueError:
-        abort(400)
     except Exception as e:
-        abort(500)
+        if hasattr(e, 'code') and 400 <= e.code < 500:
+            raise
+        abort(500, description="Internal server error while retrieving questions")
 
 
 @questions_bp.route('/<int:question_id>', methods=['GET'])
@@ -65,9 +82,9 @@ def get_question(question_id):
         question = QuestionService.get_question(question_id)
         return jsonify(question.format()), 200
     except ValueError:
-        abort(404)
+        abort(404, description=f"Question with id {question_id} not found")
     except Exception as e:
-        abort(500)
+        abort(500, description="Internal server error while retrieving question")
 
 
 @questions_bp.route('', methods=['POST'])
@@ -89,7 +106,7 @@ def create_question():
 
     # Validate required fields
     if not body:
-        abort(400)
+        abort(400, description="Request body must be JSON")
     
     question_text = body.get('question')
     answer = body.get('answer')
@@ -98,7 +115,7 @@ def create_question():
     rating = body.get('rating', 0)
 
     if not question_text or not answer or category is None or difficulty is None:
-        abort(400)
+        abort(400, description="Missing required fields: 'question', 'answer', 'category', 'difficulty'")
 
     try:
         # Validate category exists (prevents orphaned questions when FK constraints aren't enforced, e.g. SQLite)
@@ -115,15 +132,16 @@ def create_question():
     except ValueError as e:
         error_msg = str(e).lower()
         # Distinguish between missing/invalid fields (400) and constraint violations (422)
-        if 'already exists' in error_msg or 'foreign key' in error_msg or 'not found' in error_msg:
+        if _is_constraint_violation(error_msg):
             # Conflict or referential integrity issue
-            abort(422)
+            abort(422, description=str(e))
         else:
             # Bad request - invalid data
-            abort(400)
+            abort(400, description=str(e))
     except Exception as e:
-        # Database or other unexpected errors
-        abort(500)
+        if _is_constraint_violation(str(e)):
+            abort(422, description="Question data violates validation constraints")
+        abort(500, description="Internal server error while creating question")
 
 
 @questions_bp.route('/<int:question_id>', methods=['DELETE'])
@@ -145,6 +163,6 @@ def delete_question(question_id):
             'success': True
         }), 200
     except ValueError:
-        abort(404)
+        abort(404, description=f"Question with id {question_id} not found")
     except Exception as e:
-        abort(500)
+        abort(500, description="Internal server error while deleting question")

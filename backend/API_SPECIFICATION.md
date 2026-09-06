@@ -547,6 +547,7 @@ Complete REST API specification for Trivia application with 17 total endpoints a
 - 400: Missing user_answer field
 - 404: Game session not found
 - 404: Question not found
+- 409: Session state conflict (expected answer record missing/corrupt)
 - 422: Game already completed
 - 422: Question already answered (re-answer attempt)
 - 422: Invalid question_number (expected question X, got Y)
@@ -756,6 +757,21 @@ Complete REST API specification for Trivia application with 17 total endpoints a
 - Question/Category/User ID doesn't exist
 - Page number out of range
 - Category has no questions
+
+---
+
+### 409 Conflict
+**Response:**
+```json
+{
+  "error": 409,
+  "message": "Conflict - {details}",
+  "success": false
+}
+```
+
+**Causes:**
+- Game session state/audit trail conflict (for example, expected answer record is missing)
 
 ---
 

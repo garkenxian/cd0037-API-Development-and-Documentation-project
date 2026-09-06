@@ -1,7 +1,7 @@
 """User model - Pure ORM definition"""
 
 from datetime import datetime
-from sqlalchemy import Column, Integer, String, DateTime
+from sqlalchemy import Column, Integer, String, DateTime, CheckConstraint
 from sqlalchemy.orm import relationship
 from . import db
 
@@ -12,6 +12,13 @@ class User(db.Model):
     Pure ORM definition - no business logic
     """
     __tablename__ = 'users'
+    
+    # Table constraints
+    __table_args__ = (
+        CheckConstraint('length(username) >= 3 AND length(username) <= 50', name='ck_username_length'),
+        CheckConstraint('total_score >= 0', name='ck_total_score_non_negative'),
+        CheckConstraint('games_played >= 0', name='ck_games_played_non_negative'),
+    )
 
     id = Column(Integer, primary_key=True)
     username = Column(String, unique=True, nullable=False)

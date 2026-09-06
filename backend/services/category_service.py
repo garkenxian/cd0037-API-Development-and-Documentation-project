@@ -26,13 +26,17 @@ class CategoryService:
         # Validation
         if not category_type or len(category_type.strip()) == 0:
             raise ValueError("Category type cannot be empty")
+
+        normalized_type = category_type.strip()
+        if len(normalized_type) > 100:
+            raise ValueError("Category type must be between 1 and 100 characters")
         
         # Check uniqueness
-        if CategoryRepository.exists_by_type(category_type):
+        if CategoryRepository.exists_by_type(normalized_type):
             raise ValueError(f"Category '{category_type}' already exists")
         
         # Create via repository (no commit yet)
-        category = CategoryRepository.create(category_type)
+        category = CategoryRepository.create(normalized_type)
         
         # Transaction boundary - commit here
         try:

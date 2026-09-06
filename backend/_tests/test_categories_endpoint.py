@@ -46,6 +46,12 @@ class CategoriesEndpointTestCase(unittest.TestCase):
 
     # ==================== POST /categories Tests ====================
 
+    def _create_category(self, category_type='Science'):
+        """Helper to create a category and return its ID."""
+        response = self.client.post('/categories', json={'type': category_type})
+        self.assertEqual(response.status_code, 201)
+        return response.get_json()['id']
+
     def test_create_category_success(self):
         """Test successful category creation"""
         response = self.client.post(
@@ -112,6 +118,147 @@ class CategoriesEndpointTestCase(unittest.TestCase):
             self.assertEqual(response.status_code, 201)
             data = response.get_json()
             self.assertEqual(data['type'], category_data['type'])
+
+    # ==================== GET /categories Tests ====================
+
+    def test_get_categories_success(self):
+        """Test listing categories returns success payload."""
+        self._create_category('Science')
+        self._create_category('History')
+
+        response = self.client.get('/categories')
+        self.assertEqual(response.status_code, 200)
+        data = response.get_json()
+        self.assertTrue(data['success'])
+        self.assertIn('categories', data)
+        self.assertGreaterEqual(len(data['categories']), 2)
+
+    def test_get_category_by_id_success(self):
+        """Test retrieving an existing category by id."""
+        category_id = self._create_category('Art')
+
+        response = self.client.get(f'/categories/{category_id}')
+        self.assertEqual(response.status_code, 200)
+        data = response.get_json()
+        self.assertEqual(data['id'], category_id)
+        self.assertEqual(data['type'], 'Art')
+
+    def test_get_category_by_id_not_found(self):
+        """Test retrieving non-existent category returns 404."""
+        response = self.client.get('/categories/9999')
+        self.assertEqual(response.status_code, 404)
+
+    # ==================== PUT /categories/<id> Tests ====================
+
+    def test_update_category_success(self):
+        """Test updating an existing category."""
+        category_id = self._create_category('Entertainment')
+
+        response = self.client.put(f'/categories/{category_id}', json={'type': 'Movies'})
+        self.assertEqual(response.status_code, 200)
+        data = response.get_json()
+        self.assertEqual(data['id'], category_id)
+        self.assertEqual(data['type'], 'Movies')
+
+    def test_update_category_not_found(self):
+        """Test updating non-existent category returns 404."""
+        response = self.client.put('/categories/9999', json={'type': 'Anything'})
+        self.assertEqual(response.status_code, 404)
+
+    def test_update_category_duplicate_type(self):
+        """Test updating category to duplicate type returns 422."""
+        self._create_category('Geography')
+        category_id = self._create_category('Space')
+
+        response = self.client.put(f'/categories/{category_id}', json={'type': 'Geography'})
+        self.assertEqual(response.status_code, 422)
+
+    # ==================== DELETE /categories/<id> Tests ====================
+
+    def test_delete_category_success_when_no_questions(self):
+        """Test deleting category with no linked questions succeeds."""
+        category_id = self._create_category('ToDelete')
+
+        response = self.client.delete(f'/categories/{category_id}')
+        self.assertEqual(response.status_code, 200)
+        data = response.get_json()
+        self.assertEqual(data['deleted'], category_id)
+        self.assertTrue(data['success'])
+
+    def test_delete_category_not_found(self):
+        """Test deleting missing category returns 404."""
+        response = self.client.delete('/categories/9999')
+        self.assertEqual(response.status_code, 404)
+
+    def test_delete_category_with_questions_returns_422(self):
+        """Test deleting category with linked questions returns 422."""
+        category_id = self._create_category('Protected')
+        question_response = self.client.post('/questions', json={
+            'question': 'What is H2O?',
+            'answer': 'Water',
+            'category': category_id,
+            'difficulty': 1,
+        })
+        self.assertEqual(question_response.status_code, 201)
+
+        response = self.client.delete(f'/categories/{category_id}')
+        self.assertEqual(response.status_code, 422)
+
+    # ==================== GET /categories/<id>/questions Tests ====================
+
+    def test_get_category_questions_success(self):
+        """Test category questions endpoint returns paginated results."""
+        category_id = self._create_category('Science')
+        for i in range(3):
+            response = self.client.post('/questions', json={
+                'question': f'Science question {i}',
+                'answer': f'Answer {i}',
+                'category': category_id,
+                'difficulty': 1,
+            })
+            self.assertEqual(response.status_code, 201)
+
+        response = self.client.get(f'/categories/{category_id}/questions?page=1')
+        self.assertEqual(response.status_code, 200)
+        data = response.get_json()
+        self.assertTrue(data['success'])
+        self.assertEqual(data['current_category'], 'Science')
+        self.assertEqual(data['total_questions'], 3)
+        self.assertEqual(len(data['questions']), 3)
+
+    def test_get_category_questions_not_found(self):
+        """Test category questions endpoint returns 404 for invalid category."""
+        response = self.client.get('/categories/9999/questions')
+        self.assertEqual(response.status_code, 404)
+
+    def test_get_category_questions_invalid_page(self):
+        """Test category questions endpoint rejects page < 1."""
+        category_id = self._create_category('Math')
+        response = self.client.get(f'/categories/{category_id}/questions?page=0')
+        self.assertEqual(response.status_code, 400)
+
+    def test_get_category_questions_page_out_of_range(self):
+        """Test category questions endpoint returns 404 for page out of range."""
+        category_id = self._create_category('History')
+        response = self.client.post('/questions', json={
+            'question': 'History question',
+            'answer': 'History answer',
+            'category': category_id,
+            'difficulty': 1,
+        })
+        self.assertEqual(response.status_code, 201)
+
+        out_of_range = self.client.get(f'/categories/{category_id}/questions?page=2')
+        self.assertEqual(out_of_range.status_code, 404)
+
+    def test_get_category_questions_empty_returns_200(self):
+        """Test category questions endpoint returns 200 with empty questions list."""
+        category_id = self._create_category('EmptyCategory')
+        response = self.client.get(f'/categories/{category_id}/questions?page=1')
+        self.assertEqual(response.status_code, 200)
+        data = response.get_json()
+        self.assertEqual(data['total_questions'], 0)
+        self.assertEqual(data['questions'], [])
 
 
 if __name__ == '__main__':
