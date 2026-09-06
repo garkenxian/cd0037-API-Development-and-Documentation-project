@@ -1,6 +1,7 @@
 """Users API Blueprint - Handles user-related routes"""
 
 from flask import Blueprint, request, abort, jsonify
+from werkzeug.exceptions import BadRequest
 from services import UserService
 
 users_bp = Blueprint('users', __name__, url_prefix='/users')
@@ -17,6 +18,24 @@ def _is_constraint_violation(error_text):
         'integrityerror',
         'constraint failed'
     ])
+
+
+def _get_request_json():
+    """
+    Safely get JSON from request, handling parsing errors gracefully.
+    
+    Returns:
+        dict: Parsed JSON body, or None if body is empty/not JSON
+        
+    Raises:
+        BadRequest: If JSON parsing fails
+    """
+    try:
+        # Try to get JSON with force=False to get proper error on invalid JSON
+        return request.get_json(force=False)
+    except BadRequest as e:
+        # Re-raise with a descriptive message containing 'JSON'
+        abort(400, description="Request body must be valid JSON")
 
 
 @users_bp.route('', methods=['GET'])
@@ -97,7 +116,7 @@ def create_user():
     Returns: user object with 201 status
     Errors: 400 (bad request), 422 (duplicate/constraint violation)
     """
-    body = request.get_json()
+    body = _get_request_json()
 
     # Validate required fields
     if not body:

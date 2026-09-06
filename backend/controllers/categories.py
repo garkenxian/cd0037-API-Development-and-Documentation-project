@@ -1,6 +1,7 @@
 """Categories API Blueprint - Handles category-related routes"""
 
 from flask import Blueprint, request, abort, jsonify
+from werkzeug.exceptions import BadRequest
 from services import CategoryService, QuestionService
 
 categories_bp = Blueprint('categories', __name__, url_prefix='/categories')
@@ -16,6 +17,24 @@ def _is_constraint_violation(error_text):
         'constraint failed',
         'must be between'
     ])
+
+
+def _get_request_json():
+    """
+    Safely get JSON from request, handling parsing errors gracefully.
+    
+    Returns:
+        dict: Parsed JSON body, or None if body is empty/not JSON
+        
+    Raises:
+        BadRequest: If JSON parsing fails
+    """
+    try:
+        # Try to get JSON with force=False to get proper error on invalid JSON
+        return request.get_json(force=False)
+    except BadRequest as e:
+        # Re-raise with a descriptive message containing 'JSON'
+        abort(400, description="Request body must be valid JSON")
 
 
 @categories_bp.route('', methods=['GET'])
@@ -63,7 +82,7 @@ def create_category():
     Returns: category object with 201 status
     Errors: 400 (bad request), 422 (duplicate/constraint violation)
     """
-    body = request.get_json()
+    body = _get_request_json()
 
     # Validate required fields
     if not body:
@@ -102,7 +121,7 @@ def update_category(category_id):
     Returns: updated category object
     Errors: 404 (not found), 400 (bad request), 422 (duplicate)
     """
-    body = request.get_json()
+    body = _get_request_json()
 
     if not body:
         abort(400, description="Request body must be JSON")

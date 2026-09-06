@@ -1,11 +1,30 @@
 """Games API Blueprint - Handles game session and question answering routes"""
 
 from flask import Blueprint, request, abort, jsonify
+from werkzeug.exceptions import BadRequest
 from services import QuestionService, CategoryService, UserService, GameSessionService, GameSessionAnswerService
 from data_access import db, GameSessionAnswerRepository, GameSessionRepository
 from models import GameSession, Question
 
 games_bp = Blueprint('games', __name__, url_prefix='')
+
+
+def _get_request_json():
+    """
+    Safely get JSON from request, handling parsing errors gracefully.
+    
+    Returns:
+        dict: Parsed JSON body, or None if body is empty/not JSON
+        
+    Raises:
+        BadRequest: If JSON parsing fails
+    """
+    try:
+        # Try to get JSON with force=False to get proper error on invalid JSON
+        return request.get_json(force=False)
+    except BadRequest as e:
+        # Re-raise with a descriptive message containing 'JSON'
+        abort(400, description="Request body must be valid JSON")
 
 
 @games_bp.route('/games', methods=['POST'])
@@ -23,7 +42,7 @@ def create_game():
     Errors: 400 (missing fields), 404 (user/category not found), 422 (invalid data)
     """
     try:
-        body = request.get_json()
+        body = _get_request_json()
         
         # Validate body exists
         if not body:
@@ -133,7 +152,7 @@ def answer_question(game_session_id, question_number):
     Errors: 400 (missing fields), 404 (game not found), 422 (out-of-order/duplicate answer/out of range)
     """
     try:
-        body = request.get_json()
+        body = _get_request_json()
         
         # Validate body and user_answer
         if not body or 'user_answer' not in body:
