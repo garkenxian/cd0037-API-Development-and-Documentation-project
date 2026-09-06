@@ -365,7 +365,7 @@ Complete REST API specification for Trivia application with 17 total endpoints a
 ```json
 {
   "game_session_id": 42,
-  "question_number": 1,
+  "current_question_number": 1,
   "current_score": {
     "correct": 0,
     "total_answered": 0,
@@ -403,7 +403,7 @@ Complete REST API specification for Trivia application with 17 total endpoints a
 ```json
 {
   "game_session_id": 42,
-  "question_number": 3,
+  "current_question_number": 3,
   "current_score": {
     "correct": 2,
     "total_answered": 2,
@@ -474,7 +474,7 @@ Complete REST API specification for Trivia application with 17 total endpoints a
     "total_answered": 1,
     "total_questions": 5
   },
-  "next_question_number": 2,
+  "current_question_number": 2,
   "question": {
     "id": 15,
     "question": "What is the capital of France?",
@@ -499,7 +499,7 @@ Complete REST API specification for Trivia application with 17 total endpoints a
     "total_questions": 5
   },
   "status": "completed",
-  "next_question_number": null,
+  "current_question_number": null,
   "question": null,
   "success": true
 }
@@ -517,7 +517,7 @@ Complete REST API specification for Trivia application with 17 total endpoints a
     "total_answered": 2,
     "total_questions": 5
   },
-  "next_question_number": 3,
+  "current_question_number": 3,
   "question": {
     "id": 22,
     "question": "What is 2+2?",
@@ -565,18 +565,21 @@ Complete REST API specification for Trivia application with 17 total endpoints a
 **Request Body (JSON):**
 ```json
 {
-  "username": "alice_wonder"
+  "username": "alice_wonder",
+  "email": "alice@example.com"
 }
 ```
 
 **Required Fields:**
 - `username` (string, trimmed, 3-50 chars): Unique username
+- `email` (string, trimmed, non-empty): User email address
 
 **Response (Success - 201):**
 ```json
 {
   "id": 4,
   "username": "alice_wonder",
+  "email": "alice@example.com",
   "total_score": 0,
   "games_played": 0,
   "created_at": "2026-09-04T15:00:00Z",
@@ -586,6 +589,7 @@ Complete REST API specification for Trivia application with 17 total endpoints a
 
 **Errors:**
 - 400: Missing or empty 'username'
+- 400: Missing or empty 'email'
 - 422: Username already exists
 - 422: Username violates validation constraints (for example length)
 
@@ -721,6 +725,10 @@ Complete REST API specification for Trivia application with 17 total endpoints a
 
 **Errors:**
 - 400: Invalid limit or offset
+
+**Deferred Endpoint Policy:**
+- `DELETE /users/<int:id>` is intentionally not exposed in the current API version.
+- User deletion is deferred until soft-delete/anonymization rules, retention policy, and authenticated authorization boundaries are defined.
 
 ---
 
@@ -862,7 +870,7 @@ Complete REST API specification for Trivia application with 17 total endpoints a
    POST /games {user_id: 1, category_id: 1, number_of_questions: 5}
    → {
        game_session_id: 42,
-       question_number: 1,
+       current_question_number: 1,
        current_score: {correct: 0, total_answered: 0, total_questions: 5},
        question: {id: 7, question: "What is H2O?", ...}
      }
@@ -872,8 +880,8 @@ Complete REST API specification for Trivia application with 17 total endpoints a
    → {
        correct: true,
        correct_answer: "H2O",
-     current_score: {correct: 1, total_answered: 1, total_questions: 5},
-     next_question_number: 2,
+       current_score: {correct: 1, total_answered: 1, total_questions: 5},
+       current_question_number: 2,
        question: {id: 15, question: "What is the capital of France?", ...}
      }
 
@@ -882,8 +890,8 @@ Complete REST API specification for Trivia application with 17 total endpoints a
    → {
        correct: false,
        correct_answer: "Paris",
-     current_score: {correct: 1, total_answered: 2, total_questions: 5},
-     next_question_number: 3,
+       current_score: {correct: 1, total_answered: 2, total_questions: 5},
+       current_question_number: 3,
        question: {id: 22, question: "What is 2+2?", ...}
      }
 
@@ -895,14 +903,8 @@ Complete REST API specification for Trivia application with 17 total endpoints a
        correct: true,
        correct_answer: "4",
        current_score: {correct: 4, total_answered: 5, total_questions: 5},
-     status: "completed",
-     next_question_number: null,
-       question: null
-     }
-   
-   Backend automatically:
-  - Marks game_session as completed
-  - Persists final score (4 correct answers)
+       status: "completed",
+       current_question_number: null,
    - Updates User: total_score = 0 + 4 = 4, games_played = 0 + 1 = 1
 
 8. Frontend can optionally catch up (if connection lost)

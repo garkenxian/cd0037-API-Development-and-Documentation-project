@@ -36,8 +36,12 @@ jobs:
     - name: Run pytest tests with coverage
       working-directory: ./backend
       run: |
-        pytest --cov=flaskr --cov-report=xml --cov-report=term
-      continue-on-error: true
+        pytest --cov=. --cov-report=xml --cov-report=term --cov-report=json:coverage_backend.json
+
+    - name: Enforce backend per-file coverage >= 80%
+      working-directory: ./backend
+      run: |
+        python coverage_report.py
     
     - name: Upload coverage to Codecov
       uses: codecov/codecov-action@v3

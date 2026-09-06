@@ -1,0 +1,16 @@
+$kind: http-example
+request:
+  url: localhost:5000/categories
+  method: POST
+  headers:
+    Content-Type: application/json
+  body:
+    type: text
+    content: '{"type": "Technology"}'
+response:
+  statusCode: 201
+  statusText: Created
+  body:
+    type: text
+    content: ""
+order: 1000

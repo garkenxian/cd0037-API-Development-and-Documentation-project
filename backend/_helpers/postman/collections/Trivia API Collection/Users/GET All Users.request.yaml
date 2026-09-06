@@ -1,0 +1,9 @@
+$kind: http-request
+description: List all users with their statistics
+url: "{{base_url}}/users?sort=created_at&order=asc"
+method: GET
+queryParams:
+  sort: created_at
+  order: asc
+examples: ./.resources/GET All Users.resources/examples
+order: 2000

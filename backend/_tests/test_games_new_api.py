@@ -31,7 +31,7 @@ class GamesEndpointTests(unittest.TestCase):
         db.create_all()
         
         # Create test data
-        self.user = UserRepository.create('testuser', None)
+        self.user = UserRepository.create('testuser', 'testuser@test.com')
         db.session.flush()
         
         self.cat_science = CategoryRepository.create('Science')
@@ -141,7 +141,7 @@ class GamesEndpointTests(unittest.TestCase):
         data = response.get_json()
         self.assertTrue(data['success'])
         self.assertEqual(data['game_session_id'], game_id)
-        self.assertIn('question_number', data)
+        self.assertIn('current_question_number', data)
 
     def test_get_game_not_found(self):
         """Test getting nonexistent game"""

@@ -1,0 +1,10 @@
+$kind: http-request
+description: Delete a question by ID
+url: "{{base_url}}/questions/:question_id"
+method: DELETE
+pathVariables:
+  - key: question_id
+    value: "{{created_question_id}}"
+    description: ""
+examples: ./.resources/DELETE Question.resources/examples
+order: 5000

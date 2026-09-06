@@ -88,17 +88,13 @@ class UsersEndpointUnitTests(unittest.TestCase):
 
     @patch('controllers.users.UserService')
     def test_create_user_returns_400_for_missing_email(self, mock_service):
-        """Test endpoint accepts username without email (email now optional)"""
-        mock_user = Mock()
-        mock_user.format.return_value = {'username': 'testuser'}
-        mock_service.create_user.return_value = mock_user
-        
+        """Test endpoint returns 400 for missing email (email now required)"""
         response = self.client.post(
             '/users',
             json={'username': 'testuser'}
         )
         
-        self.assertEqual(response.status_code, 201)
+        self.assertEqual(response.status_code, 400)
 
     @patch('controllers.users.UserService')
     def test_create_user_returns_400_for_empty_request(self, mock_service):

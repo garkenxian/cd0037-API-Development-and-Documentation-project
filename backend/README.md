@@ -195,6 +195,89 @@ When tests run, an in-memory SQLite database is automatically created with seed 
 
 For development, use the seed data described in the "Set up the Database" section above.
 
+### Code Coverage
+
+This project enforces a **minimum of 80% per-file code coverage** for all backend source files. Coverage is tracked manually during development to catch regressions early.
+
+#### Running Coverage Reports
+
+Generate a coverage report with detailed per-file metrics:
+
+```bash
+cd backend
+
+# Generate coverage report (JSON + terminal output)
+pytest --cov=. --cov-report=term --cov-report=json:coverage_backend.json
+
+# Generate HTML report for interactive viewing
+pytest --cov=. --cov-report=html
+start htmlcov/index.html  # Windows
+open htmlcov/index.html   # macOS
+xdg-open htmlcov/index.html  # Linux
+```
+
+#### Coverage Requirements
+
+**Per-File Minimum**: Every **source file** must achieve ≥80% line coverage.
+
+**Coverage Scope**: Only files in `controllers/`, `services/`, `models/`, `data_access/`, and `flaskr/` are included in the per-file gate. Utility scripts and helpers (e.g., `coverage_report.py`, `db_init.py`) are excluded via `.coveragerc`.
+
+Current coverage status (all source files ✅):
+- Controllers: 84-95% (questions.py, games.py, categories.py, users.py)
+- Services: 94-100%
+- Models: 94-100%
+- Data Access: 89-100%
+- Flask App: 90%
+- **Overall**: 90%+
+
+**Files below 80% must be prioritized** with additional tests for edge paths and error handling before merging to main.
+
+#### Viewing Missing Lines
+
+To identify which lines in a file are not covered:
+
+```bash
+# Use pytest coverage plugin with --cov-report=term-missing
+pytest --cov=. --cov-report=term-missing --cov-report=html
+
+# Or examine the JSON report:
+# - coverage_backend.json contains detailed line-by-line coverage data
+# - Open htmlcov/index.html and click on a file to see uncovered lines highlighted in red
+```
+
+#### Developer Workflow
+
+Before committing changes:
+
+1. **Run full test suite with coverage**:
+   ```bash
+   pytest --cov=. --cov-report=term --cov-report=json:coverage_backend.json
+   ```
+
+2. **Check per-file coverage** - All files must show ≥80%:
+   - Look at the "% COV" column in terminal output
+   - Or open `htmlcov/index.html` in browser for visual inspection
+
+3. **If a file drops below 80%**:
+   - Add tests for missing edge paths (look at htmlcov for red-highlighted lines)
+   - Re-run coverage until file is ≥80%
+   - Do NOT merge until all files pass 80% gate
+
+4. **After merge**:
+   - Coverage remains above 80% per-file through normal test expansion
+   - Regression tests prevent coverage from degrading unexpectedly
+
+#### Interpreting Coverage Gaps
+
+Uncovered lines typically fall into these categories:
+
+- **Exception handling paths**: Error conditions that are hard to trigger in tests (but should still be testable)
+- **Edge cases**: Boundary conditions (page 0, negative values, empty results)
+- **Constraint violations**: Database unique/foreign key violations
+- **Legacy code paths**: Fallback logic that may no longer be exercised
+
+When reviewing uncovered lines, prioritize tests for exception handling and edge paths that improve robustness.
+
 ## Development Workflow
 
 1. **Create database and seed data**:

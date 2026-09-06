@@ -131,3 +131,23 @@ class QuestionRepository:
         return Question.query.join(Category).filter(
             Question.category == category_id
         ).paginate(page=page, per_page=per_page)
+
+    @staticmethod
+    def get_by_composite_key(question_text, answer_text, category_id):
+        """
+        Check if question exists with same normalized text, answer, and category.
+        Uses case-insensitive comparison via SQL LIKE.
+        
+        Args:
+            question_text: Question text (should be trimmed)
+            answer_text: Answer text (should be trimmed)
+            category_id: Category ID
+            
+        Returns:
+            Question object if found, None otherwise
+        """
+        return Question.query.filter(
+            Question.category == category_id,
+            Question.question.ilike(question_text),
+            Question.answer.ilike(answer_text)
+        ).first()

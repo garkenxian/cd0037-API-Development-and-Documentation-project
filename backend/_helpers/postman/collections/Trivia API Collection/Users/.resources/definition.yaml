@@ -1,0 +1,3 @@
+$kind: collection
+description: User management and leaderboard endpoints
+order: 4000

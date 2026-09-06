@@ -11,13 +11,13 @@ class UserService:
     """Service layer for user operations"""
 
     @staticmethod
-    def create_user(username, email=None):
+    def create_user(username, email):
         """
         Create a new user with validation
         
         Args:
             username: Unique username string
-            email: User email address (optional)
+            email: User email address (required)
             
         Returns:
             Created user object
@@ -33,12 +33,17 @@ class UserService:
         if len(normalized_username) < 3 or len(normalized_username) > 50:
             raise ValueError("Username must be between 3 and 50 characters")
         
+        if not email or len(email.strip()) == 0:
+            raise ValueError("Email cannot be empty")
+        
+        normalized_email = email.strip().lower()
+        
         # Check uniqueness
         if UserRepository.exists_by_username(normalized_username):
             raise ValueError(f"Username '{normalized_username}' already exists")
         
         # Create via repository (no commit yet)
-        user = UserRepository.create(normalized_username, email)
+        user = UserRepository.create(normalized_username, normalized_email)
         
         # Transaction boundary - commit here
         try:

@@ -8,6 +8,8 @@ omit =
     */site-packages/*
     setup.py
     conftest.py
+    coverage_report.py
+    show_missing_lines.py
 
 [report]
 # Exclude certain lines from coverage

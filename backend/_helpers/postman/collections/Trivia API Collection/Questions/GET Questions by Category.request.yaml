@@ -1,0 +1,12 @@
+$kind: http-request
+description: Retrieve questions filtered by category (paginated)
+url: "{{base_url}}/categories/:catagory_id/questions?page=1"
+method: GET
+queryParams:
+  page: "1"
+pathVariables:
+  - key: catagory_id
+    value: "{{created_catagory_id}}"
+    description: ""
+examples: ./.resources/GET Questions by Category.resources/examples
+order: 2000

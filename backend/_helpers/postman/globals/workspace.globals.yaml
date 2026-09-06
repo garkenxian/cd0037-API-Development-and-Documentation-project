@@ -1,0 +1,14 @@
+name: Globals
+values:
+  - key: created_catagory_id
+    value: ''
+    enabled: true
+  - key: created_question_id
+    value: ''
+    enabled: true
+  - key: created_user_id
+    value: ''
+    enabled: true
+  - key: created_game_session_id
+    value: ''
+    enabled: true

@@ -47,7 +47,7 @@ endif
 test-all: test
 
 db-init:
-	$(PYTHON) _helpers/db_init.py
+	$(PYTHON) _helpers/db_init.py --force
 
 db-seed:
 	$(PYTHON) _helpers/db_seed.py

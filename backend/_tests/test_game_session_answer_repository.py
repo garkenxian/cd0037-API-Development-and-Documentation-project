@@ -28,7 +28,7 @@ class GameSessionAnswerRepositoryTests(unittest.TestCase):
         db.create_all()
         
         # Create test data
-        self.user = UserRepository.create('testuser', None)
+        self.user = UserRepository.create('testuser', 'testuser@test.com')
         db.session.flush()
         
         self.category = CategoryRepository.create('Science')

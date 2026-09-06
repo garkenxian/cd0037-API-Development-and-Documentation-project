@@ -32,7 +32,7 @@ class UserServiceUnitTests(unittest.TestCase):
     def test_create_user_validates_short_username(self, mock_repo, mock_db):
         """Test that create_user rejects usernames shorter than 3 chars"""
         with self.assertRaises(ValueError) as context:
-            UserService.create_user('ab')
+            UserService.create_user('ab', 'test@example.com')
 
         self.assertIn('between 3 and 50', str(context.exception).lower())
         mock_repo.create.assert_not_called()
@@ -40,15 +40,15 @@ class UserServiceUnitTests(unittest.TestCase):
     @patch('services.user_service.db')
     @patch('services.user_service.UserRepository')
     def test_create_user_validates_invalid_email(self, mock_repo, mock_db):
-        """Test that create_user accepts optional email - no validation"""
+        """Test that create_user requires email parameter"""
         mock_repo.exists_by_username.return_value = False
         mock_user = Mock()
         mock_repo.create.return_value = mock_user
         
-        result = UserService.create_user('testuser')
+        result = UserService.create_user('testuser', 'test@example.com')
         
         self.assertEqual(result, mock_user)
-        mock_repo.create.assert_called_once_with('testuser', None)
+        mock_repo.create.assert_called_once_with('testuser', 'test@example.com')
 
     @patch('services.user_service.db')
     @patch('services.user_service.UserRepository')
@@ -523,6 +523,7 @@ class QuestionServiceUnitTests(unittest.TestCase):
     @patch('services.question_service.QuestionRepository')
     def test_create_question_sets_default_rating(self, mock_repo, mock_db):
         """Test that create_question sets default rating to 0"""
+        mock_repo.get_by_composite_key.return_value = None  # No duplicate found
         mock_repo.exists_by_type.return_value = False
         mock_question = Mock()
         mock_repo.create.return_value = mock_question
@@ -537,6 +538,7 @@ class QuestionServiceUnitTests(unittest.TestCase):
     @patch('services.question_service.QuestionRepository')
     def test_create_question_commits_on_success(self, mock_repo, mock_db):
         """Test that create_question commits on success"""
+        mock_repo.get_by_composite_key.return_value = None  # No duplicate found
         mock_question = Mock()
         mock_repo.create.return_value = mock_question
         
@@ -567,6 +569,7 @@ class QuestionServiceUnitTests(unittest.TestCase):
     @patch('services.question_service.QuestionRepository')
     def test_create_question_commit_error(self, mock_repo, mock_db):
         """Test that create_question rollsback on commit error"""
+        mock_repo.get_by_composite_key.return_value = None  # No duplicate found
         mock_repo.create.return_value = Mock()
         mock_db.session.commit.side_effect = Exception("DB Error")
         

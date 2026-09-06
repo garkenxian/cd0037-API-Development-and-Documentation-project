@@ -209,7 +209,7 @@ class UsersExceptionHandlingTests(unittest.TestCase):
 
     def test_create_user_success(self):
         """Test successful POST /users"""
-        response = self.client.post('/users', json={'username': 'testuser'})
+        response = self.client.post('/users', json={'username': 'testuser', 'email': 'testuser@test.com'})
         self.assertEqual(response.status_code, 201)
         data = response.get_json()
         self.assertEqual(data['username'], 'testuser')
@@ -226,15 +226,15 @@ class UsersExceptionHandlingTests(unittest.TestCase):
 
     def test_create_user_duplicate(self):
         """Test POST /users with duplicate username"""
-        self.client.post('/users', json={'username': 'testuser'})
+        self.client.post('/users', json={'username': 'testuser', 'email': 'testuser@test.com'})
         
-        response = self.client.post('/users', json={'username': 'testuser'})
+        response = self.client.post('/users', json={'username': 'testuser', 'email': 'testuser2@test.com'})
         self.assertEqual(response.status_code, 422)
 
     def test_get_users_success(self):
         """Test GET /users"""
         for i in range(3):
-            self.client.post('/users', json={'username': f'user{i}'})
+            self.client.post('/users', json={'username': f'user{i}', 'email': f'user{i}@test.com'})
         
         response = self.client.get('/users')
         self.assertEqual(response.status_code, 200)
@@ -246,7 +246,7 @@ class UsersExceptionHandlingTests(unittest.TestCase):
     def test_get_users_valid_sort_by_score(self):
         """Test GET /users with sort_by=total_score"""
         for i in range(2):
-            self.client.post('/users', json={'username': f'user{i}'})
+            self.client.post('/users', json={'username': f'user{i}', 'email': f'user{i}@test.com'})
         
         response = self.client.get('/users?sort_by=total_score&order=desc')
         self.assertEqual(response.status_code, 200)

@@ -1,0 +1,3 @@
+$kind: collection
+description: Game session endpoints with persistent answer tracking
+order: 3000

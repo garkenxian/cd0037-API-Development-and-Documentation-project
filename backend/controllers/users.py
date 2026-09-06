@@ -1,6 +1,7 @@
 """Users API Blueprint - Handles user-related routes"""
 
 from flask import Blueprint, request, abort, jsonify
+from werkzeug.exceptions import BadRequest
 from services import UserService
 
 users_bp = Blueprint('users', __name__, url_prefix='/users')
@@ -17,6 +18,24 @@ def _is_constraint_violation(error_text):
         'integrityerror',
         'constraint failed'
     ])
+
+
+def _get_request_json():
+    """
+    Safely get JSON from request, handling parsing errors gracefully.
+    
+    Returns:
+        dict: Parsed JSON body, or None if body is empty/not JSON
+        
+    Raises:
+        BadRequest: If JSON parsing fails
+    """
+    try:
+        # Try to get JSON with force=False to get proper error on invalid JSON
+        return request.get_json(force=False)
+    except BadRequest as e:
+        # Re-raise with a descriptive message containing 'JSON'
+        abort(400, description="Request body must be valid JSON")
 
 
 @users_bp.route('', methods=['GET'])
@@ -77,8 +96,14 @@ def get_user(user_id):
     except ValueError:
         abort(404, description=f"User with id {user_id} not found")
     except Exception as e:
-        if hasattr(e, 'code') and 400 <= e.code < 500:
-            raise
+        # Check if this is a client error (4xx) - if so, re-raise it
+        if hasattr(e, 'code'):
+            try:
+                code = int(e.code) if isinstance(e.code, str) else e.code
+                if 400 <= code < 500:
+                    raise
+            except (ValueError, TypeError):
+                pass
         abort(500, description="Internal server error while retrieving user")
 
 
@@ -91,7 +116,7 @@ def create_user():
     Returns: user object with 201 status
     Errors: 400 (bad request), 422 (duplicate/constraint violation)
     """
-    body = request.get_json()
+    body = _get_request_json()
 
     # Validate required fields
     if not body:
@@ -102,6 +127,9 @@ def create_user():
 
     if not username:
         abort(400, description="Missing required field: 'username'")
+    
+    if not email:
+        abort(400, description="Missing required field: 'email'")
 
     try:
         user = UserService.create_user(username, email)
@@ -117,8 +145,13 @@ def create_user():
             # Bad request - invalid data
             abort(400, description=str(e))
     except Exception as e:
-        if hasattr(e, 'code') and 400 <= e.code < 500:
-            raise
+        if hasattr(e, 'code'):
+            try:
+                code = int(e.code) if isinstance(e.code, str) else e.code
+                if 400 <= code < 500:
+                    raise
+            except (ValueError, TypeError):
+                pass
         if _is_constraint_violation(str(e)):
             abort(422, description="User data violates validation constraints")
         abort(500, description="Internal server error while creating user")

@@ -1,0 +1,16 @@
+$kind: http-example
+request:
+  url: localhost:5000/questions
+  method: POST
+  headers:
+    Content-Type: application/json
+  body:
+    type: text
+    content: '{"question": "What is the chemical formula for water?", "answer": "H2O", "category": 1, "difficulty": 2, "rating": 0}'
+response:
+  statusCode: 201
+  statusText: Created
+  body:
+    type: text
+    content: ""
+order: 1000

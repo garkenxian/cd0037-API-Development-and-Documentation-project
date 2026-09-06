@@ -1,11 +1,30 @@
 """Games API Blueprint - Handles game session and question answering routes"""
 
 from flask import Blueprint, request, abort, jsonify
+from werkzeug.exceptions import BadRequest
 from services import QuestionService, CategoryService, UserService, GameSessionService, GameSessionAnswerService
 from data_access import db, GameSessionAnswerRepository, GameSessionRepository
 from models import GameSession, Question
 
 games_bp = Blueprint('games', __name__, url_prefix='')
+
+
+def _get_request_json():
+    """
+    Safely get JSON from request, handling parsing errors gracefully.
+    
+    Returns:
+        dict: Parsed JSON body, or None if body is empty/not JSON
+        
+    Raises:
+        BadRequest: If JSON parsing fails
+    """
+    try:
+        # Try to get JSON with force=False to get proper error on invalid JSON
+        return request.get_json(force=False)
+    except BadRequest as e:
+        # Re-raise with a descriptive message containing 'JSON'
+        abort(400, description="Request body must be valid JSON")
 
 
 @games_bp.route('/games', methods=['POST'])
@@ -19,11 +38,11 @@ def create_game():
         "number_of_questions": int (optional, default=5)
     }
     
-    Returns: {game_session_id, question_number, current_score, question, success}
+    Returns: {game_session_id, current_question_number, current_score, question, success}
     Errors: 400 (missing fields), 404 (user/category not found), 422 (invalid data)
     """
     try:
-        body = request.get_json()
+        body = _get_request_json()
         
         # Validate body exists
         if not body:
@@ -97,7 +116,7 @@ def create_game():
         
         return jsonify({
             'game_session_id': game_session.id,
-            'question_number': 1,
+            'current_question_number': 1,
             'current_score': {
                 'correct': 0,
                 'total_answered': 0,
@@ -129,11 +148,11 @@ def answer_question(game_session_id, question_number):
     }
     
     Returns: {game_session_id, answered_question_number, correct, correct_answer,
-              current_score, next_question_number, question, status, success}
+              current_score, current_question_number, question, status, success}
     Errors: 400 (missing fields), 404 (game not found), 422 (out-of-order/duplicate answer/out of range)
     """
     try:
-        body = request.get_json()
+        body = _get_request_json()
         
         # Validate body and user_answer
         if not body or 'user_answer' not in body:
@@ -233,7 +252,7 @@ def answer_question(game_session_id, question_number):
         if is_complete:
             # Game is complete - update user stats idempotently
             response['status'] = 'completed'
-            response['next_question_number'] = None
+            response['current_question_number'] = None
             response['question'] = None
             
             # Atomically mark completion and only award score once per game session
@@ -303,10 +322,10 @@ def answer_question(game_session_id, question_number):
                             db.session.rollback()
                             abort(500, description="Internal server error while preparing next question")
                 
-                # Only set next_question_number if we successfully have a question
+                # Only set current_question_number if we successfully have a question
                 # This prevents partial-success responses with null question
                 if next_question:
-                    response['next_question_number'] = next_question_number
+                    response['current_question_number'] = next_question_number
                     response['question'] = {
                         'id': next_question.id,
                         'question': next_question.question,
@@ -320,7 +339,7 @@ def answer_question(game_session_id, question_number):
                     db.session.rollback()
                     abort(500, description="Unable to select next question. Database may be empty or no questions available.")
             else:
-                response['next_question_number'] = None
+                response['current_question_number'] = None
                 response['question'] = None
         
         return jsonify(response), 200
@@ -338,7 +357,7 @@ def get_game_state(game_session_id):
     Uses persisted GameSessionAnswer records to determine actual state,
     not calculated assumptions.
     
-    Returns: {game_session_id, question_number, current_score, question, status, success}
+    Returns: {game_session_id, current_question_number, current_score, question, status, success}
     Errors: 404 (game session not found)
     """
     try:
@@ -398,7 +417,7 @@ def get_game_state(game_session_id):
         
         return jsonify({
             'game_session_id': game_session_id,
-            'question_number': next_question_number,
+            'current_question_number': next_question_number,
             'current_score': {
                 'correct': game_state['correct'],
                 'total_answered': game_state['total_answered'],

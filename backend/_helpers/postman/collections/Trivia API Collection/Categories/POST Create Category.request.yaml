@@ -1,0 +1,33 @@
+$kind: http-request
+description: Create a new category
+url: "{{base_url}}/categories"
+method: POST
+headers:
+  Content-Type: application/json
+body:
+  type: text
+  content: '{"type": "Technology"}'
+scripts:
+  - type: afterResponse
+    code: "// Check if the response status code is 200 OK\r
+
+      if (pm.response.code === 201) {\r
+
+      \    // Decode the JSON response body into a JavaScript object\r
+
+      \    const responseData = pm.response.json();\r
+
+      \    \r
+
+      \    // Extract the 'id' property and set it as a global variable\r
+
+      \    pm.globals.set(\"created_catagory_id\", responseData.id);\r
+
+      \    \r
+
+      \    console.log(\"Global variable 'created_catagory_id' set to:\", responseData.id);\r
+
+      }"
+    language: text/javascript
+examples: ./.resources/POST Create Category.resources/examples
+order: 3000

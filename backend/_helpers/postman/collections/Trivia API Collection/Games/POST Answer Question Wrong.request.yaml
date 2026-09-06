@@ -1,0 +1,90 @@
+$kind: http-request
+description: Answer a game question and get the next question
+url: "{{base_url}}/games/:created_game_session_id/:current_question_number"
+method: POST
+headers:
+  Content-Type: application/json
+pathVariables:
+  created_game_session_id: "{{created_game_session_id}}"
+  current_question_number: "{{current_question_number}}"
+body:
+  type: json
+  content: "{\r
+
+    \    \"user_answer\": \"wrong_answer\"\r
+
+    }"
+scripts:
+  - type: afterResponse
+    code: "/*\r
+
+      {\r
+
+      \    \"current_score\": {\r
+
+      \        \"correct\": 0,\r
+
+      \        \"total_answered\": 0,\r
+
+      \        \"total_questions\": 3\r
+
+      \    },\r
+
+      \    \"game_session_id\": 17,\r
+
+      \    \"question\": {\r
+
+      \        \"category\": 8,\r
+
+      \        \"difficulty\": 2,\r
+
+      \        \"id\": 25,\r
+
+      \        \"question\": \"dMUiEQyDeh_ZPtqEP8yYN\",\r
+
+      \        \"rating\": 0.0\r
+
+      \    },\r
+
+      \    \"question_number\": 1,\r
+
+      \    \"success\": true\r
+
+      }\r
+
+      */\r
+
+      \r
+
+      // Check if the response status code is 200 OK\r
+
+      if (pm.response.code === 200) {\r
+
+      \    // Decode the JSON response body into a JavaScript object\r
+
+      \    const responseData = pm.response.json();\r
+
+      \    \r
+
+      \    // Extract the 'id' property and set it as a global variable\r
+
+      \    pm.globals.set(\"created_game_session_id\", responseData.game_session_id);\r
+
+      \    \r
+
+      \    console.log(\"Global variable 'created_game_session_id' set to:\", responseData.id);\r
+
+      \r
+
+      \    pm.environment.set(\"expected_answer\", responseData.question.question.split(\"_\")[1]);\r
+
+      \r
+
+      \    pm.environment.set(\"current_question_number\", responseData.current_question_number);\r
+
+      \    \r
+
+      }"
+    language: text/javascript
+examples: .resources/POST Answer Question Wrong.resources/examples
+order: 4000

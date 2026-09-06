@@ -1,0 +1,6 @@
+$kind: http-request
+description: Retrieve a single question by ID
+url: "{{base_url}}/questions/{{question_id}}"
+method: GET
+examples: ./.resources/GET Question by ID.resources/examples
+order: 3000

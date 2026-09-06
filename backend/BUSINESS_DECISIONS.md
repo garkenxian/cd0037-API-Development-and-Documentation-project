@@ -259,6 +259,11 @@ UI calculates percentage (3/5 = 60%) from this data, giving frontend flexibility
 - User ID becomes required for POST /games (starting a game session)
 - Frontend will eventually need to create/select user before quiz
 
+**Deferred Endpoint (Intentional):**
+- `DELETE /users/<int:id>` is intentionally not exposed at the API layer in the current phase.
+- Reason: user records are tied to persistent game history and leaderboard integrity; deleting users now creates avoidable ambiguity in historical score reporting and session audit trails.
+- Revisit when one of these is in place: soft-delete/anonymization policy, explicit retention requirements, and authenticated/admin-only authorization boundaries.
+
 ---
 
 ## Decision 5: Python Runtime Baseline (3.10+)

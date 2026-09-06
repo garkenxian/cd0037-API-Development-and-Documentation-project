@@ -125,6 +125,27 @@ This section captures downstream planning updates after completing Phase 2 work.
    - Prefer small, test-backed fixes over architecture expansion.
    - Defer non-essential perfection work unless it blocks current phase exit criteria.
 
+## End-of-Phase-3 Revalidation Update (2026-09-06)
+This section captures downstream planning updates after completing Phase 3 work.
+
+1. Phase status snapshot:
+   - Phase 3 backend coverage closure is complete with local validation.
+   - Backend test suite passes with 423 tests and repeatable coverage reporting.
+
+2. What changed for future phases:
+   - Backend per-file coverage gate is now enforced in CI using `pytest --cov=.` plus `coverage_report.py` threshold checks.
+   - Coverage policy is now explicitly scoped to backend source layers (`controllers/`, `services/`, `models/`, `data_access/`, `flaskr/`) via `.coveragerc` omissions for utility scripts.
+   - Edge-path regression tests were expanded and tightened for out-of-range pagination behavior in categories and questions endpoints.
+
+3. Updated priorities for remaining phases:
+   - Phase 4 is now the active implementation phase and remains valid with no ordering change.
+   - Phase 5 remains required because frontend per-file coverage is still below the hard constraint.
+   - Phases 6-8 remain valid with no dependency changes from Phase 3 work.
+
+4. Assignment-scope guardrails (reconfirmed):
+   - Keep frontend changes limited to contract migration in Phase 4.
+   - Defer broad refactors unless they directly unblock API contract or coverage requirements.
+
 ## Phased Plan
 
 ## Phase 0 - Baseline Lock and Alignment
@@ -259,7 +280,7 @@ Done when:
 Goal: enforce your hard rule in CI and eliminate weak backend files.
 
 Tasks:
-1. Track per-file coverage manually in development workflow (developer policy, not CI-enforced).
+1. Track per-file coverage in development workflow and enforce threshold checks in CI.
 2. Add missing tests for low files first:
    - `controllers/questions.py`
    - edge error paths in categories and games where uncovered.
@@ -418,11 +439,15 @@ These appear temporary, superseded, or PR-specific:
 4. Frontend modernization: CONFIRMED
    - Keep class-based components.
    - Apply only contract-alignment changes required by endpoint redesign.
+5. Backend coverage gate scope: CONFIRMED
+   - Per-file >=80% gate applies to backend source layers under `controllers/`, `services/`, `models/`, `data_access/`, and `flaskr/`.
+   - Utility scripts used for developer workflows are excluded from gate calculations via `.coveragerc`.
+   - CI must fail when threshold is violated.
 
 ## Immediate Next 3 Executable Tasks
-1. Execute Phase 3 coverage closure for backend files still below 80%, starting with `controllers/questions.py` and remaining low edge paths.
-2. Add/adjust tests that lock in Phase 1 and Phase 2 contracts (sequence, conflict behavior, standardized error payloads) to prevent regressions.
-3. Prepare Phase 4 frontend contract migration task pack to remove legacy `/quizzes` usage and align search with `GET /questions?search=...`.
+1. Start Phase 4 migration by updating `frontend/src/components/QuizView.js` to `POST /games`, `POST /games/<id>/<question_number>`, and optional `GET /games/<id>` resume flow.
+2. Update `frontend/src/components/QuestionView.js` search integration to `GET /questions?search=...` and align pagination/filter handling with backend contracts.
+3. Add focused frontend regression tests for migrated contract paths before entering full Phase 5 coverage expansion.
 
 ## Spec-to-Implementation Alignment Backlog (v1.0 Contract)
 Use this checklist to bring runtime behavior in line with `backend/API_SPECIFICATION.md`.
@@ -470,3 +495,4 @@ Use this checklist to bring runtime behavior in line with `backend/API_SPECIFICA
    - Treat API spec as active source of truth (v1.0).
    - Any endpoint contract change requires same-PR updates to controller tests and spec examples.
    - Add a lightweight pre-merge checklist item: "Spec examples match actual responses".
+   - [DONE] Phase 3 coverage governance: CI now runs backend coverage with per-file threshold enforcement.

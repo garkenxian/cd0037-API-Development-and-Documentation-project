@@ -1,0 +1,16 @@
+$kind: http-example
+request:
+  url: localhost:5000/games/42/1
+  method: POST
+  headers:
+    Content-Type: application/json
+  body:
+    type: text
+    content: '{"user_answer": "water"}'
+response:
+  statusCode: 200
+  statusText: OK
+  body:
+    type: text
+    content: ""
+order: 1000
