@@ -1,0 +1,15 @@
+$kind: http-request
+description: Retrieve paginated questions with optional search filter
+url: "{{base_url}}/questions?page=1"
+method: GET
+queryParams:
+  - key: search
+    value: water
+    disabled: true
+    description: ""
+  - key: page
+    value: "1"
+    disabled: false
+    description: ""
+examples: ./.resources/GET All Questions (Paginated).resources/examples
+order: 1000

@@ -54,6 +54,14 @@ class QuestionService:
         if not isinstance(rating, (int, float)) or rating < 0.0 or rating > 5.0:
             raise ValueError("Rating must be between 0.0 and 5.0")
         
+        # Check for duplicate question (composite key: question + answer + category)
+        # Uses normalized (lowercase) comparison
+        QuestionService._check_duplicate_question(
+            normalized_question_text,
+            normalized_answer,
+            category
+        )
+        
         # Create via repository (no commit yet)
         question = QuestionRepository.create(
             question_text=normalized_question_text,
@@ -194,3 +202,26 @@ class QuestionService:
             raise ValueError(f"Failed to delete question: {str(e)}")
         
         return question
+
+    @staticmethod
+    def _check_duplicate_question(question_text, answer, category_id):
+        """
+        Check if a question with the same normalized text, answer, and category already exists.
+        Uses case-insensitive comparison (via SQL LIKE).
+        
+        Args:
+            question_text: Question text (should already be trimmed)
+            answer: Answer text (should already be trimmed)
+            category_id: Category ID
+            
+        Raises:
+            ValueError: If a duplicate question is found
+        """
+        # Query via repository for duplicate
+        existing = QuestionRepository.get_by_composite_key(question_text, answer, category_id)
+        
+        if existing:
+            raise ValueError(
+                f"A question with this text, answer, and category already exists "
+                f"(ID: {existing.id}). Composite key constraint: question + answer + category must be unique."
+            )

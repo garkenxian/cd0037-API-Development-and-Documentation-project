@@ -37,7 +37,7 @@ class UsersLeaderboardTests(unittest.TestCase):
         """Test leaderboard with default parameters"""
         # Create some users
         for i in range(15):
-            self.client.post('/users', json={'username': f'user{i}'})
+            self.client.post('/users', json={'username': f'user{i}', 'email': f'user{i}@example.com'})
         
         response = self.client.get('/users/leaderboard')
         self.assertEqual(response.status_code, 200)
@@ -50,7 +50,7 @@ class UsersLeaderboardTests(unittest.TestCase):
     def test_leaderboard_with_limit(self):
         """Test leaderboard with custom limit"""
         for i in range(20):
-            self.client.post('/users', json={'username': f'user{i}'})
+            self.client.post('/users', json={'username': f'user{i}', 'email': f'user{i}@example.com'})
         
         response = self.client.get('/users/leaderboard?limit=5')
         self.assertEqual(response.status_code, 200)
@@ -60,7 +60,7 @@ class UsersLeaderboardTests(unittest.TestCase):
     def test_leaderboard_with_offset(self):
         """Test leaderboard with offset for pagination"""
         for i in range(20):
-            self.client.post('/users', json={'username': f'user{i}'})
+            self.client.post('/users', json={'username': f'user{i}', 'email': f'user{i}@example.com'})
         
         response = self.client.get('/users/leaderboard?limit=5&offset=5')
         self.assertEqual(response.status_code, 200)
@@ -72,7 +72,7 @@ class UsersLeaderboardTests(unittest.TestCase):
     def test_leaderboard_ranking(self):
         """Test that leaderboard has correct ranking"""
         for i in range(5):
-            self.client.post('/users', json={'username': f'user{i}'})
+            self.client.post('/users', json={'username': f'user{i}', 'email': f'user{i}@example.com'})
         
         response = self.client.get('/users/leaderboard?limit=10')
         data = response.get_json()
@@ -111,7 +111,7 @@ class UsersLeaderboardTests(unittest.TestCase):
     def test_leaderboard_large_limit(self):
         """Test leaderboard with large limit"""
         for i in range(5):
-            self.client.post('/users', json={'username': f'user{i}'})
+            self.client.post('/users', json={'username': f'user{i}', 'email': f'user{i}@example.com'})
         
         response = self.client.get('/users/leaderboard?limit=100')
         self.assertEqual(response.status_code, 200)
@@ -162,7 +162,7 @@ class UsersParameterValidationTests(unittest.TestCase):
     def test_get_users_valid_sort_parameters(self):
         """Test GET /users with all valid sort parameters"""
         for i in range(3):
-            self.client.post('/users', json={'username': f'user{i}'})
+            self.client.post('/users', json={'username': f'user{i}', 'email': f'user{i}@example.com'})
         
         for sort_param in ['created_at', 'total_score', 'games_played']:
             response = self.client.get(f'/users?sort={sort_param}')
@@ -171,7 +171,7 @@ class UsersParameterValidationTests(unittest.TestCase):
     def test_get_users_valid_order_parameters(self):
         """Test GET /users with all valid order parameters"""
         for i in range(3):
-            self.client.post('/users', json={'username': f'user{i}'})
+            self.client.post('/users', json={'username': f'user{i}', 'email': f'user{i}@example.com'})
         
         for order_param in ['asc', 'desc']:
             response = self.client.get(f'/users?order={order_param}')
@@ -180,7 +180,7 @@ class UsersParameterValidationTests(unittest.TestCase):
     def test_get_users_default_sort_and_order(self):
         """Test GET /users uses defaults when parameters omitted"""
         for i in range(3):
-            self.client.post('/users', json={'username': f'user{i}'})
+            self.client.post('/users', json={'username': f'user{i}', 'email': f'user{i}@example.com'})
         
         response = self.client.get('/users')
         self.assertEqual(response.status_code, 200)
@@ -209,7 +209,7 @@ class UsersParameterValidationTests(unittest.TestCase):
 
     def test_get_user_success(self):
         """Test GET /users/<id> with valid user"""
-        create_response = self.client.post('/users', json={'username': 'testuser'})
+        create_response = self.client.post('/users', json={'username': 'testuser', 'email': 'testuser@example.com'})
         user_id = create_response.get_json()['id']
         
         response = self.client.get(f'/users/{user_id}')
@@ -266,7 +266,7 @@ class UsersExceptionHandlingTests(unittest.TestCase):
         """Test POST /users when service raises exception"""
         mock_service.side_effect = Exception("Database error")
         
-        response = self.client.post('/users', json={'username': 'testuser'})
+        response = self.client.post('/users', json={'username': 'testuser', 'email': 'testuser@example.com'})
         self.assertEqual(response.status_code, 500)
 
     @patch('controllers.users.UserService.get_leaderboard')

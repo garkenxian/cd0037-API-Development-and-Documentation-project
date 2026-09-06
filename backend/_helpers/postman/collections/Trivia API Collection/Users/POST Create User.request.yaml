@@ -1,0 +1,72 @@
+$kind: http-request
+description: Create a new user
+url: "{{base_url}}/users"
+method: POST
+headers:
+  Content-Type: application/json
+body:
+  type: json
+  content: "{\r
+
+    \    \"username\": \"{{_random_username}}\",\r
+
+    \    \"email\": \"{{_random_username}}@fake_email.net\"\r
+
+    }"
+scripts:
+  - type: afterResponse
+    code: "// Check if the response status code is 200 OK\r
+
+      if (pm.response.code === 201) {\r
+
+      \    // Decode the JSON response body into a JavaScript object\r
+
+      \    const responseData = pm.response.json();\r
+
+      \    \r
+
+      \    // Extract the 'id' property and set it as a global variable\r
+
+      \    pm.globals.set(\"created_user_id\", responseData.id);\r
+
+      \    \r
+
+      \    console.log(\"Global variable 'created_user_id' set to:\", responseData.id);\r
+
+      }"
+    language: text/javascript
+  - type: beforeRequest
+    code: "// Function to generate a random alphanumeric string of a specified length\r
+
+      function generateRandomString(length) {\r
+
+      \    const characters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';\r
+
+      \    let result = '';\r
+
+      \    for (let i = 0; i < length; i++) {\r
+
+      \        result += characters.charAt(Math.floor(Math.random() * characters.length));\r
+
+      \    }\r
+
+      \    return result;\r
+
+      }\r
+
+      \r
+
+      // Generate two distinct random strings (e.g., 10 characters each)\r
+
+      const randomString1 = generateRandomString(10);\r
+
+      const randomString2 = generateRandomString(10);\r
+
+      \r
+
+      // Set them as environment variables (or pm.globals.set)\r
+
+      pm.environment.set(\"_random_username\", `${randomString1}_${randomString2}`);"
+    language: text/javascript
+examples: ./.resources/POST Create User.resources/examples
+order: 1000

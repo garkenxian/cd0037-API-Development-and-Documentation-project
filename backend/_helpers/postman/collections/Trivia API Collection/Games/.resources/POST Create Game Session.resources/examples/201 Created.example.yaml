@@ -1,0 +1,16 @@
+$kind: http-example
+request:
+  url: localhost:5000/games
+  method: POST
+  headers:
+    Content-Type: application/json
+  body:
+    type: text
+    content: '{"user_id": 1, "category_id": 2, "number_of_questions": 5}'
+response:
+  statusCode: 201
+  statusText: Created
+  body:
+    type: text
+    content: ""
+order: 1000

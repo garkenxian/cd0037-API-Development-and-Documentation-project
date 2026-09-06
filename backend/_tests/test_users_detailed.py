@@ -33,7 +33,7 @@ class UsersControllerDetailedTests(unittest.TestCase):
 
     def test_create_user_basic(self):
         """Test basic user creation"""
-        response = self.client.post('/users', json={'username': 'alice'})
+        response = self.client.post('/users', json={'username': 'alice', 'email': 'alice@example.com'})
         self.assertEqual(response.status_code, 201)
         data = response.get_json()
         self.assertEqual(data['username'], 'alice')
@@ -51,17 +51,17 @@ class UsersControllerDetailedTests(unittest.TestCase):
     def test_create_user_duplicate_fails(self):
         """Test duplicate username fails"""
         # Create first user
-        self.client.post('/users', json={'username': 'alice'})
+        self.client.post('/users', json={'username': 'alice', 'email': 'alice@example.com'})
         
         # Try to create duplicate
-        response = self.client.post('/users', json={'username': 'alice'})
+        response = self.client.post('/users', json={'username': 'alice', 'email': 'alice2@example.com'})
         self.assertEqual(response.status_code, 422)
 
     def test_get_all_users(self):
         """Test getting all users"""
         # Create multiple users
         for i in range(5):
-            self.client.post('/users', json={'username': f'user{i}'})
+            self.client.post('/users', json={'username': f'user{i}', 'email': f'user{i}@example.com'})
         
         response = self.client.get('/users')
         self.assertEqual(response.status_code, 200)
@@ -72,7 +72,7 @@ class UsersControllerDetailedTests(unittest.TestCase):
     def test_get_all_users_sorted_by_created_at(self):
         """Test sorting by created_at (default)"""
         for i in range(3):
-            self.client.post('/users', json={'username': f'user{i}'})
+            self.client.post('/users', json={'username': f'user{i}', 'email': f'user{i}@example.com'})
         
         response = self.client.get('/users?sort_by=created_at&order=asc')
         self.assertEqual(response.status_code, 200)
@@ -82,7 +82,7 @@ class UsersControllerDetailedTests(unittest.TestCase):
     def test_get_all_users_sorted_by_score(self):
         """Test sorting by total_score"""
         for i in range(3):
-            self.client.post('/users', json={'username': f'user{i}'})
+            self.client.post('/users', json={'username': f'user{i}', 'email': f'user{i}@example.com'})
         
         response = self.client.get('/users?sort_by=total_score&order=desc')
         self.assertEqual(response.status_code, 200)
@@ -90,14 +90,14 @@ class UsersControllerDetailedTests(unittest.TestCase):
     def test_get_all_users_sorted_by_games(self):
         """Test sorting by games_played"""
         for i in range(3):
-            self.client.post('/users', json={'username': f'user{i}'})
+            self.client.post('/users', json={'username': f'user{i}', 'email': f'user{i}@example.com'})
         
         response = self.client.get('/users?sort_by=games_played&order=asc')
         self.assertEqual(response.status_code, 200)
 
     def test_get_user_by_id(self):
         """Test getting a specific user"""
-        create_response = self.client.post('/users', json={'username': 'alice'})
+        create_response = self.client.post('/users', json={'username': 'alice', 'email': 'alice@example.com'})
         user_id = create_response.get_json()['id']
         
         response = self.client.get(f'/users/{user_id}')
@@ -108,7 +108,7 @@ class UsersControllerDetailedTests(unittest.TestCase):
 
     def test_get_user_with_game_sessions(self):
         """Test user details include game_sessions"""
-        create_response = self.client.post('/users', json={'username': 'alice'})
+        create_response = self.client.post('/users', json={'username': 'alice', 'email': 'alice@example.com'})
         user_id = create_response.get_json()['id']
         
         response = self.client.get(f'/users/{user_id}')
@@ -130,14 +130,14 @@ class UsersControllerDetailedTests(unittest.TestCase):
 
     def test_user_stats_initialization(self):
         """Test that user stats are initialized correctly"""
-        response = self.client.post('/users', json={'username': 'alice'})
+        response = self.client.post('/users', json={'username': 'alice', 'email': 'alice@example.com'})
         data = response.get_json()
         self.assertEqual(data['total_score'], 0)
         self.assertEqual(data['games_played'], 0)
 
     def test_user_has_created_at_timestamp(self):
         """Test that user has created_at timestamp"""
-        response = self.client.post('/users', json={'username': 'alice'})
+        response = self.client.post('/users', json={'username': 'alice', 'email': 'alice@example.com'})
         data = response.get_json()
         self.assertIn('created_at', data)
         self.assertIsNotNone(data['created_at'])
@@ -145,7 +145,7 @@ class UsersControllerDetailedTests(unittest.TestCase):
     def test_get_users_with_order_asc(self):
         """Test sorting with explicit asc order"""
         for i in range(3):
-            self.client.post('/users', json={'username': f'user{i}'})
+            self.client.post('/users', json={'username': f'user{i}', 'email': f'user{i}@example.com'})
         
         response = self.client.get('/users?order=asc')
         self.assertEqual(response.status_code, 200)
@@ -153,7 +153,7 @@ class UsersControllerDetailedTests(unittest.TestCase):
     def test_get_users_with_order_desc(self):
         """Test sorting with desc order"""
         for i in range(3):
-            self.client.post('/users', json={'username': f'user{i}'})
+            self.client.post('/users', json={'username': f'user{i}', 'email': f'user{i}@example.com'})
         
         response = self.client.get('/users?sort_by=total_score&order=desc')
         self.assertEqual(response.status_code, 200)

@@ -1,0 +1,9 @@
+$kind: http-request
+description: Get top users ranked by total score
+url: "{{base_url}}/users/leaderboard?limit=10&offset=0"
+method: GET
+queryParams:
+  limit: "10"
+  offset: "0"
+examples: ./.resources/GET Leaderboard.resources/examples
+order: 4000

@@ -36,7 +36,7 @@ class GameFailurePathTests(unittest.TestCase):
         db.create_all()
         
         # Create test data
-        self.user = UserRepository.create('testuser', None)
+        self.user = UserRepository.create('testuser', 'testuser@test.com')
         db.session.flush()
         
         self.cat_science = CategoryRepository.create('Science')
@@ -260,7 +260,7 @@ class GameFailurePathTests(unittest.TestCase):
         # Verify next question is 2
         response = self.client.get(f'/games/{game_id}')
         data = json.loads(response.data)
-        self.assertEqual(data['question_number'], 2)
+        self.assertEqual(data['current_question_number'], 2)
         
         # Answer question 2
         answers = GameSessionAnswerRepository.get_by_game(game_id)
@@ -341,7 +341,7 @@ class GameFailurePathTests(unittest.TestCase):
         
         # Initial response should have question for Q1
         self.assertIsNotNone(data['question'], "First question must not be null")
-        self.assertEqual(data['question_number'], 1)
+        self.assertEqual(data['current_question_number'], 1)
         
         # Answer Q1
         answers = GameSessionAnswerRepository.get_by_game(game_id)
@@ -351,17 +351,17 @@ class GameFailurePathTests(unittest.TestCase):
         self.assertEqual(response.status_code, 200)
         data = json.loads(response.data)
         
-        # Check payload consistency: if next_question_number is set, question must be set
-        if data.get('next_question_number') is not None:
+        # Check payload consistency: if current_question_number is set, question must be set
+        if data.get('current_question_number') is not None:
             self.assertIsNotNone(data.get('question'), 
-                "If next_question_number is returned, question payload must not be null")
+                "If current_question_number is returned, question payload must not be null")
             self.assertNotEqual(data.get('question'), None,
-                "question field must not be null when next_question_number is present")
+                "question field must not be null when current_question_number is present")
         
-        # On completion, next_question_number should be None and question should be None
+        # On completion, current_question_number should be None and question should be None
         if data.get('status') == 'completed':
-            self.assertIsNone(data.get('next_question_number'),
-                "next_question_number should be None on completion")
+            self.assertIsNone(data.get('current_question_number'),
+                "current_question_number should be None on completion")
             self.assertIsNone(data.get('question'),
                 "question should be None on completion")
 
@@ -395,7 +395,7 @@ class GameFailurePathTests(unittest.TestCase):
                         "Should accept request for exactly available unique questions")
         data = json.loads(response.data)
         self.assertIsNotNone(data.get('game_session_id'))
-        self.assertEqual(data['question_number'], 1)
+        self.assertEqual(data['current_question_number'], 1)
 
     def test_create_game_all_categories_insufficient_returns_422(self):
         """Capacity validation should work for all-categories (category_id=0) requests too"""

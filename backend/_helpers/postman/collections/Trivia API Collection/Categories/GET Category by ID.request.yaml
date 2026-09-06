@@ -1,0 +1,6 @@
+$kind: http-request
+description: Retrieve a single category by ID
+url: "{{base_url}}/categories/{{category_id}}"
+method: GET
+examples: ./.resources/GET Category by ID.resources/examples
+order: 2000

@@ -72,16 +72,15 @@ class UsersEndpointTestCase(unittest.TestCase):
         self.assertIn('error', data)
 
     def test_create_user_missing_email(self):
-        """Test creation succeeds with missing email (email now optional)"""
+        """Test creation fails with missing email (email now required)"""
         response = self.client.post(
             '/users',
             json={'username': 'testuser'}
         )
         
-        self.assertEqual(response.status_code, 201)
+        self.assertEqual(response.status_code, 400)
         data = response.get_json()
-        self.assertEqual(data['username'], 'testuser')
-        self.assertIsNone(data.get('email'))
+        self.assertIn('email', data['message'].lower())
 
     def test_create_user_empty_request(self):
         """Test creation fails with empty request body"""

@@ -1,0 +1,51 @@
+$kind: http-request
+description: Create a new game session and return the first question
+url: "{{base_url}}/games"
+method: POST
+headers:
+  Content-Type: application/json
+body:
+  type: json
+  content: "{\r
+
+    \    \"user_id\": {{created_user_id}},\r
+
+    \    \"category_id\": {{created_catagory_id}},\r
+
+    \    \"number_of_questions\": 3\r
+
+    }"
+scripts:
+  - type: afterResponse
+    code: "// Check if the response status code is 201 Created\r
+
+      if (pm.response.code === 201) {\r
+
+      \    // Decode the JSON response body into a JavaScript object\r
+
+      \    const responseData = pm.response.json();\r
+
+      \    \r
+
+      \    // Extract the 'id' property and set it as a global variable\r
+
+      \    pm.globals.set(\"created_game_session_id\", responseData.game_session_id);\r
+
+      \    \r
+
+      \    console.log(\"Global variable 'created_game_session_id' set to:\", responseData.id);\r
+
+      \r
+
+      \    pm.environment.set(\"expected_answer\", responseData.question.question.split(\"_\")[1]);\r
+
+      \r
+
+      \    pm.environment.set(\"current_question_number\", responseData.current_question_number);\r
+
+      \    \r
+
+      }"
+    language: text/javascript
+examples: ./.resources/POST Create Game Session.resources/examples
+order: 1000

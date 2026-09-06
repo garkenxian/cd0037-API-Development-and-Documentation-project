@@ -197,7 +197,7 @@ class EdgePathExceptionTestCase(unittest.TestCase):
     def test_create_game_no_questions_available(self):
         """Test create game when no questions are available"""
         # Create user but no questions
-        user = User(username='testplayer')
+        user = User(username='testplayer', email='testplayer@test.com')
         db.session.add(user)
         db.session.commit()
         
@@ -215,7 +215,7 @@ class EdgePathExceptionTestCase(unittest.TestCase):
     def test_create_game_no_questions_in_category(self):
         """Test create game for category with no questions"""
         # Create user and category
-        user = User(username='gamer1')
+        user = User(username='gamer1', email='gamer1@test.com')
         category = Category(type='Empty Category')
         db.session.add(user)
         db.session.add(category)
@@ -261,13 +261,15 @@ class EdgePathExceptionTestCase(unittest.TestCase):
         """Test create user with duplicate username"""
         # Create first user
         response1 = self.client.post('/users', json={
-            'username': 'johndoe'
+            'username': 'johndoe',
+            'email': 'johndoe@test.com'
         })
         self.assertEqual(response1.status_code, 201)
         
         # Try to create second user with same username
         response2 = self.client.post('/users', json={
-            'username': 'johndoe'
+            'username': 'johndoe',
+            'email': 'johndoe2@test.com'
         })
         self.assertEqual(response2.status_code, 422)
         data = response2.get_json()

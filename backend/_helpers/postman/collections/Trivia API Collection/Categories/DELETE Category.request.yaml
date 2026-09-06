@@ -1,0 +1,10 @@
+$kind: http-request
+description: Delete a category (only if no questions exist)
+url: "{{base_url}}/categories/:category_id"
+method: DELETE
+pathVariables:
+  - key: category_id
+    value: "{{created_catagory_id}}"
+    description: ""
+examples: ./.resources/DELETE Category.resources/examples
+order: 5000

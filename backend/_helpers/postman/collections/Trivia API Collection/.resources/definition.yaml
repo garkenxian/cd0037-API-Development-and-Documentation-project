@@ -1,0 +1,4 @@
+$kind: collection
+description: Complete REST API endpoints for manual testing of the Trivia application
+variables:
+  base_url: http://127.0.0.1:5000

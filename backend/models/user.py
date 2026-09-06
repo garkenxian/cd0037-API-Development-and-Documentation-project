@@ -22,7 +22,7 @@ class User(db.Model):
 
     id = Column(Integer, primary_key=True)
     username = Column(String, unique=True, nullable=False)
-    email = Column(String, nullable=True)
+    email = Column(String, nullable=False)
     total_score = Column(Integer, default=0, nullable=False)
     games_played = Column(Integer, default=0, nullable=False)
     created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
@@ -30,7 +30,7 @@ class User(db.Model):
     # Relationship to game sessions
     game_sessions = relationship('GameSession', backref='user', lazy=True, foreign_keys='GameSession.user_id')
 
-    def __init__(self, username, email=None):
+    def __init__(self, username, email):
         self.username = username
         self.email = email
         self.total_score = 0

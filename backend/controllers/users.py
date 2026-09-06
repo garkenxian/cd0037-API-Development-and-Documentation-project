@@ -77,8 +77,14 @@ def get_user(user_id):
     except ValueError:
         abort(404, description=f"User with id {user_id} not found")
     except Exception as e:
-        if hasattr(e, 'code') and 400 <= e.code < 500:
-            raise
+        # Check if this is a client error (4xx) - if so, re-raise it
+        if hasattr(e, 'code'):
+            try:
+                code = int(e.code) if isinstance(e.code, str) else e.code
+                if 400 <= code < 500:
+                    raise
+            except (ValueError, TypeError):
+                pass
         abort(500, description="Internal server error while retrieving user")
 
 
@@ -102,6 +108,9 @@ def create_user():
 
     if not username:
         abort(400, description="Missing required field: 'username'")
+    
+    if not email:
+        abort(400, description="Missing required field: 'email'")
 
     try:
         user = UserService.create_user(username, email)
@@ -117,8 +126,13 @@ def create_user():
             # Bad request - invalid data
             abort(400, description=str(e))
     except Exception as e:
-        if hasattr(e, 'code') and 400 <= e.code < 500:
-            raise
+        if hasattr(e, 'code'):
+            try:
+                code = int(e.code) if isinstance(e.code, str) else e.code
+                if 400 <= code < 500:
+                    raise
+            except (ValueError, TypeError):
+                pass
         if _is_constraint_violation(str(e)):
             abort(422, description="User data violates validation constraints")
         abort(500, description="Internal server error while creating user")

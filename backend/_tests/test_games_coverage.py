@@ -30,7 +30,7 @@ class GamesErrorHandlingTests(unittest.TestCase):
         db.create_all()
         
         # Create test data
-        self.user = UserRepository.create('testuser', None)
+        self.user = UserRepository.create('testuser', 'testuser@test.com')
         self.cat1 = CategoryRepository.create('Science')
         db.session.flush()
         # Create at least 5 questions for tests requesting 5-question games

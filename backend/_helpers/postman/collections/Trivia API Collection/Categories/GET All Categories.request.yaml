@@ -1,0 +1,6 @@
+$kind: http-request
+description: Retrieve all categories
+url: "{{base_url}}/categories"
+method: GET
+examples: ./.resources/GET All Categories.resources/examples
+order: 1000

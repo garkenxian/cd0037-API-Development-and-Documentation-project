@@ -37,7 +37,7 @@ class GameDeterminismTests(unittest.TestCase):
         db.create_all()
         
         # Create test data
-        self.user = UserRepository.create('testuser', None)
+        self.user = UserRepository.create('testuser', 'testuser@test.com')
         db.session.flush()
         
         self.cat_science = CategoryRepository.create('Science')
@@ -180,7 +180,7 @@ class GameDeterminismTests(unittest.TestCase):
         # Resume should return question 2
         response = self.client.get(f'/games/{game_id}')
         data = json.loads(response.data)
-        self.assertEqual(data['question_number'], 2)
+        self.assertEqual(data['current_question_number'], 2)
         self.assertNotEqual(data['current_score']['total_answered'], 0)
 
     def test_game_complete_updates_user_stats_exactly_once(self):
@@ -499,7 +499,7 @@ class GameSessionAnswerServiceTests(unittest.TestCase):
         db.create_all()
         
         # Create test data
-        self.user = UserRepository.create('testuser', None)
+        self.user = UserRepository.create('testuser', 'testuser@test.com')
         db.session.flush()
         
         self.cat = CategoryRepository.create('Science')

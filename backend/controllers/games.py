@@ -19,7 +19,7 @@ def create_game():
         "number_of_questions": int (optional, default=5)
     }
     
-    Returns: {game_session_id, question_number, current_score, question, success}
+    Returns: {game_session_id, current_question_number, current_score, question, success}
     Errors: 400 (missing fields), 404 (user/category not found), 422 (invalid data)
     """
     try:
@@ -97,7 +97,7 @@ def create_game():
         
         return jsonify({
             'game_session_id': game_session.id,
-            'question_number': 1,
+            'current_question_number': 1,
             'current_score': {
                 'correct': 0,
                 'total_answered': 0,
@@ -129,7 +129,7 @@ def answer_question(game_session_id, question_number):
     }
     
     Returns: {game_session_id, answered_question_number, correct, correct_answer,
-              current_score, next_question_number, question, status, success}
+              current_score, current_question_number, question, status, success}
     Errors: 400 (missing fields), 404 (game not found), 422 (out-of-order/duplicate answer/out of range)
     """
     try:
@@ -233,7 +233,7 @@ def answer_question(game_session_id, question_number):
         if is_complete:
             # Game is complete - update user stats idempotently
             response['status'] = 'completed'
-            response['next_question_number'] = None
+            response['current_question_number'] = None
             response['question'] = None
             
             # Atomically mark completion and only award score once per game session
@@ -303,10 +303,10 @@ def answer_question(game_session_id, question_number):
                             db.session.rollback()
                             abort(500, description="Internal server error while preparing next question")
                 
-                # Only set next_question_number if we successfully have a question
+                # Only set current_question_number if we successfully have a question
                 # This prevents partial-success responses with null question
                 if next_question:
-                    response['next_question_number'] = next_question_number
+                    response['current_question_number'] = next_question_number
                     response['question'] = {
                         'id': next_question.id,
                         'question': next_question.question,
@@ -320,7 +320,7 @@ def answer_question(game_session_id, question_number):
                     db.session.rollback()
                     abort(500, description="Unable to select next question. Database may be empty or no questions available.")
             else:
-                response['next_question_number'] = None
+                response['current_question_number'] = None
                 response['question'] = None
         
         return jsonify(response), 200
@@ -338,7 +338,7 @@ def get_game_state(game_session_id):
     Uses persisted GameSessionAnswer records to determine actual state,
     not calculated assumptions.
     
-    Returns: {game_session_id, question_number, current_score, question, status, success}
+    Returns: {game_session_id, current_question_number, current_score, question, status, success}
     Errors: 404 (game session not found)
     """
     try:
@@ -398,7 +398,7 @@ def get_game_state(game_session_id):
         
         return jsonify({
             'game_session_id': game_session_id,
-            'question_number': next_question_number,
+            'current_question_number': next_question_number,
             'current_score': {
                 'correct': game_state['correct'],
                 'total_answered': game_state['total_answered'],

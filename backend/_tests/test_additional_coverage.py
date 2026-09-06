@@ -229,7 +229,7 @@ class UsersAdditionalTestCase(unittest.TestCase):
         """Test GET /users"""
         # Create some users
         for i in range(3):
-            self.client.post('/users', json={'username': f'user{i}'})
+            self.client.post('/users', json={'username': f'user{i}', 'email': f'user{i}@test.com'})
         
         response = self.client.get('/users')
         self.assertEqual(response.status_code, 200)
@@ -240,8 +240,8 @@ class UsersAdditionalTestCase(unittest.TestCase):
     def test_get_users_sorting(self):
         """Test GET /users with sorting"""
         # Create users
-        self.client.post('/users', json={'username': 'alice'})
-        self.client.post('/users', json={'username': 'bob'})
+        self.client.post('/users', json={'username': 'alice', 'email': 'alice@test.com'})
+        self.client.post('/users', json={'username': 'bob', 'email': 'bob@test.com'})
         
         # Test default sort (by created_at asc)
         response = self.client.get('/users')
@@ -254,7 +254,7 @@ class UsersAdditionalTestCase(unittest.TestCase):
     def test_get_user_by_id(self):
         """Test GET /users/<id>"""
         # Create a user
-        u_response = self.client.post('/users', json={'username': 'testuser'})
+        u_response = self.client.post('/users', json={'username': 'testuser', 'email': 'testuser@test.com'})
         u_id = u_response.get_json()['id']
         
         # Get it

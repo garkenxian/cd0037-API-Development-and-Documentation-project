@@ -197,6 +197,122 @@ class QuestionsEndpointTestCase(unittest.TestCase):
             data = response.get_json()
             self.assertEqual(data['question'], question_data['question'])
 
+    def test_create_duplicate_question_exact_match(self):
+        """Test creation fails when identical question/answer/category exists"""
+        # Create first question
+        response1 = self.client.post(
+            '/questions',
+            json={
+                'question': 'What is photosynthesis?',
+                'answer': 'Process where plants make food',
+                'category': self.category_id,
+                'difficulty': 2
+            }
+        )
+        self.assertEqual(response1.status_code, 201)
+        
+        # Attempt to create identical question
+        response2 = self.client.post(
+            '/questions',
+            json={
+                'question': 'What is photosynthesis?',
+                'answer': 'Process where plants make food',
+                'category': self.category_id,
+                'difficulty': 3  # Different difficulty
+            }
+        )
+        
+        # Should return 422 - duplicate detected by composite key
+        self.assertEqual(response2.status_code, 422)
+        data = response2.get_json()
+        self.assertIn('composite key', data['message'].lower())
+
+    def test_create_duplicate_question_case_insensitive(self):
+        """Test duplicate detection is case-insensitive"""
+        # Create first question
+        response1 = self.client.post(
+            '/questions',
+            json={
+                'question': 'What is DNA?',
+                'answer': 'Deoxyribonucleic Acid',
+                'category': self.category_id,
+                'difficulty': 3
+            }
+        )
+        self.assertEqual(response1.status_code, 201)
+        
+        # Attempt to create with different case
+        response2 = self.client.post(
+            '/questions',
+            json={
+                'question': 'WHAT IS DNA?',
+                'answer': 'deoxyribonucleic acid',
+                'category': self.category_id,
+                'difficulty': 3
+            }
+        )
+        
+        # Should return 422 - duplicate detected via case-insensitive match
+        self.assertEqual(response2.status_code, 422)
+
+    def test_create_different_question_same_category(self):
+        """Test creating different questions in same category succeeds"""
+        # Create first question
+        response1 = self.client.post(
+            '/questions',
+            json={
+                'question': 'What is photosynthesis?',
+                'answer': 'Process where plants make food',
+                'category': self.category_id,
+                'difficulty': 2
+            }
+        )
+        self.assertEqual(response1.status_code, 201)
+        
+        # Create different question in same category (should succeed)
+        response2 = self.client.post(
+            '/questions',
+            json={
+                'question': 'What is respiration?',
+                'answer': 'Process where cells break down glucose',
+                'category': self.category_id,
+                'difficulty': 2
+            }
+        )
+        
+        self.assertEqual(response2.status_code, 201)
+
+    def test_create_same_question_different_category(self):
+        """Test same question/answer in different category succeeds"""
+        # Create second category
+        response_cat = self.client.post('/categories', json={'type': 'Art'})
+        category_id_2 = response_cat.get_json()['id']
+        
+        # Create first question
+        response1 = self.client.post(
+            '/questions',
+            json={
+                'question': 'What is color?',
+                'answer': 'Visual perception',
+                'category': self.category_id,
+                'difficulty': 1
+            }
+        )
+        self.assertEqual(response1.status_code, 201)
+        
+        # Create same question/answer but different category (should succeed)
+        response2 = self.client.post(
+            '/questions',
+            json={
+                'question': 'What is color?',
+                'answer': 'Visual perception',
+                'category': category_id_2,
+                'difficulty': 1
+            }
+        )
+        
+        self.assertEqual(response2.status_code, 201)
+
 
 if __name__ == '__main__':
     unittest.main()

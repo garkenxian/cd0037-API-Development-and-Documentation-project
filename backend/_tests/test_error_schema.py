@@ -165,25 +165,25 @@ class ErrorSchemaComplianceTests(unittest.TestCase):
     def test_error_422_duplicate_username(self):
         """Test 422 error when creating duplicate user."""
         from services import UserService
-        UserService.create_user('testuser')
+        UserService.create_user('testuser', 'testuser@test.com')
         
         # Try to create duplicate
         response = self.client.post('/users',
-                                   json={'username': 'testuser'},
+                                   json={'username': 'testuser', 'email': 'testuser2@test.com'},
                                    content_type='application/json')
         self.assert_error_schema(response, 422, 'exists')
 
     def test_error_422_username_validation_constraints(self):
         """Test 422 error when username violates length constraints."""
         response = self.client.post('/users',
-                                   json={'username': 'ab'},
+                                   json={'username': 'ab', 'email': 'ab@test.com'},
                                    content_type='application/json')
         self.assert_error_schema(response, 422, 'between 3 and 50')
     
     def test_error_422_invalid_number_of_questions(self):
         """Test 422 error when number_of_questions is out of range."""
         from services import UserService, CategoryService
-        user = UserService.create_user('testuser')
+        user = UserService.create_user('testuser', 'testuser@test.com')
         cat = CategoryService.create_category('Test Category')
         
         # Try to create game with invalid number_of_questions
@@ -214,7 +214,7 @@ class ErrorSchemaComplianceTests(unittest.TestCase):
     def test_error_422_insufficient_questions_in_category(self):
         """Test 422 error when creating game with more questions than exist in category."""
         from services import UserService, CategoryService, QuestionService
-        user = UserService.create_user('testuser')
+        user = UserService.create_user('testuser', 'testuser@test.com')
         cat = CategoryService.create_category('Test Category')
         
         # Create only 2 questions
@@ -243,7 +243,7 @@ class ErrorSchemaComplianceTests(unittest.TestCase):
         from services import UserService, CategoryService, QuestionService, GameSessionService
         
         # Setup: Create a user, category, questions, and game session
-        user = UserService.create_user('testuser')
+        user = UserService.create_user('testuser', 'testuser@test.com')
         cat = CategoryService.create_category('Test Category')
         
         questions = []
@@ -320,7 +320,7 @@ class SuccessResponseSchemaTests(unittest.TestCase):
     def test_success_201_create_user(self):
         """Test 201 success response for POST /users."""
         response = self.client.post('/users',
-                                   json={'username': 'testuser'},
+                                   json={'username': 'testuser', 'email': 'testuser@test.com'},
                                    content_type='application/json')
         self.assertEqual(response.status_code, 201)
         data = response.get_json()

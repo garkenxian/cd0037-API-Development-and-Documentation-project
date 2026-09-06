@@ -1,0 +1,14 @@
+name: localhost
+values:
+  - key: base_url
+    value: ''
+  - key: _random_question
+    value: ''
+  - key: _random_answer
+    value: ''
+  - key: _random_username
+    value: ''
+  - key: expected_answer
+    value: ''
+  - key: current_question_number
+    value: ''

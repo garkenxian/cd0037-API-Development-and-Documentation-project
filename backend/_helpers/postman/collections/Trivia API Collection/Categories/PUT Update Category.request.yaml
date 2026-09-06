@@ -1,0 +1,15 @@
+$kind: http-request
+description: Update an existing category
+url: "{{base_url}}/categories/:catagory_id"
+method: PUT
+headers:
+  Content-Type: application/json
+pathVariables:
+  - key: catagory_id
+    value: "{{created_catagory_id}}"
+    description: ""
+body:
+  type: json
+  content: '{"type": "Modern Tech"}'
+examples: ./.resources/PUT Update Category.resources/examples
+order: 4000

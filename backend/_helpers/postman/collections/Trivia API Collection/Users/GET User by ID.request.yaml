@@ -1,0 +1,10 @@
+$kind: http-request
+description: Get user details and game history
+url: "{{base_url}}/users/:user_id"
+method: GET
+pathVariables:
+  - key: user_id
+    value: "{{created_user_id}}"
+    description: ""
+examples: ./.resources/GET User by ID.resources/examples
+order: 3000
