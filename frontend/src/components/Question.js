@@ -23,6 +23,9 @@ class Question extends Component {
             className='category'
             alt={`${category.toLowerCase()}`}
             src={`${category.toLowerCase()}.svg`}
+            onError={(e) => {
+              e.target.src = '/question-mark-button-svgrepo-com.svg';
+            }}
           />
           <div className='difficulty'>Difficulty: {difficulty}</div>
           <img

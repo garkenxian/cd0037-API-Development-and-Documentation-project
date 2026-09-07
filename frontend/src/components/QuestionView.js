@@ -158,6 +158,9 @@ class QuestionView extends Component {
                   className='category'
                   alt={`${this.state.categories[id].toLowerCase()}`}
                   src={`${this.state.categories[id].toLowerCase()}.svg`}
+                  onError={(e) => {
+                    e.target.src = '/question-mark-button-svgrepo-com.svg';
+                  }}
                 />
               </li>
             ))}
