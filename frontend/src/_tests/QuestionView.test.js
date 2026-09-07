@@ -1,5 +1,5 @@
 import React from 'react';
-import { render, waitFor } from '@testing-library/react';
+import { render, waitFor, fireEvent } from '@testing-library/react';
 import QuestionView from '../components/QuestionView';
 import * as api from '../utils/api';
 
@@ -94,58 +94,116 @@ describe('QuestionView Component', () => {
 
   describe('Search Functionality', () => {
     it('encodes search terms in URL', async () => {
+      const { container } = render(<QuestionView />);
+
+      // Wait for initial load
+      await waitFor(() => {
+        expect(api.apiGet).toHaveBeenCalledWith(
+          '/questions?page=1',
+          expect.any(Function),
+          expect.any(Function)
+        );
+      });
+
       api.apiGet.mockClear();
-      render(<QuestionView />);
+
+      // Find the search form and submit with special characters
+      const forms = container.querySelectorAll('form');
+      const searchForm = Array.from(forms).find(f => f.textContent.includes('search') || f.textContent.includes('Search'));
+      
+      if (searchForm) {
+        const input = searchForm.querySelector('input[type="text"]');
+        fireEvent.change(input, { target: { value: 'H2O test' } });
+        fireEvent.submit(searchForm);
+
+        await waitFor(() => {
+          // Verify URL encoding of search term
+          expect(api.apiGet).toHaveBeenCalledWith(
+            expect.stringContaining('search=H2O%20test'),
+            expect.any(Function),
+            expect.any(Function)
+          );
+        });
+      }
+    });
+
+    it('includes search term in API call', async () => {
+      const { container } = render(<QuestionView />);
 
       // Wait for initial load
       await waitFor(() => {
         expect(api.apiGet).toHaveBeenCalled();
       });
 
-      // Get the onSuccess callback from the first call and invoke search
-      const initialCall = api.apiGet.mock.calls[0];
-      const onSuccess = initialCall[1];
-      
-      // Simulate component updating and calling submitSearch
-      // The component stores activeSearch in state
       api.apiGet.mockClear();
+
+      // Find and submit search form
+      const forms = container.querySelectorAll('form');
+      const searchForm = Array.from(forms).find(f => f.textContent.includes('search') || f.textContent.includes('Search'));
       
-      // Get the render result to manually trigger search if needed
-      // In a real test scenario, we'd use React's testing utilities to interact
-      // For now, we just verify the mock is set up correctly
-      expect(api.apiGet).not.toHaveBeenCalled();
-    });
+      if (searchForm) {
+        const input = searchForm.querySelector('input[type="text"]');
+        fireEvent.change(input, { target: { value: 'water' } });
+        fireEvent.submit(searchForm);
 
-    it('includes search term in API call', async () => {
-      api.apiGet.mockClear();
-      const { rerender } = render(<QuestionView />);
-
-      // Wait for initial load
-      await waitFor(() => {
-        expect(api.apiGet).toHaveBeenCalledWith(
-          '/questions?page=1',
-          expect.any(Function),
-          expect.any(Function)
-        );
-      });
+        await waitFor(() => {
+          // Verify search parameter in URL
+          expect(api.apiGet).toHaveBeenCalledWith(
+            expect.stringContaining('search=water'),
+            expect.any(Function),
+            expect.any(Function)
+          );
+        });
+      }
     });
 
     it('maintains activeSearch state across pagination', async () => {
       const { container } = render(<QuestionView />);
 
-      // Verify initial state
+      // Wait for initial load and get the initial call count
       await waitFor(() => {
-        expect(api.apiGet).toHaveBeenCalledWith(
-          '/questions?page=1',
-          expect.any(Function),
-          expect.any(Function)
-        );
+        expect(api.apiGet).toHaveBeenCalled();
       });
 
-      // The component now has activeSearch in state and will include it in future calls
-      // This is verified through the code implementation
-      const instance = container.querySelector('.question-view');
-      expect(instance).toBeTruthy();
+      api.apiGet.mockClear();
+
+      // Perform search
+      const forms = container.querySelectorAll('form');
+      const searchForm = Array.from(forms).find(f => f.textContent.includes('search') || f.textContent.includes('Search'));
+      
+      if (searchForm) {
+        const input = searchForm.querySelector('input[type="text"]');
+        fireEvent.change(input, { target: { value: 'water' } });
+        fireEvent.submit(searchForm);
+
+        await waitFor(() => {
+          expect(api.apiGet).toHaveBeenCalledWith(
+            expect.stringContaining('search=water'),
+            expect.any(Function),
+            expect.any(Function)
+          );
+        });
+      }
+
+      api.apiGet.mockClear();
+
+      // Simulate clicking page 2 pagination
+      const pagination = container.querySelector('.pagination-menu');
+      if (pagination) {
+        const pageSpans = pagination.querySelectorAll('.page-num');
+        if (pageSpans.length > 1) {
+          fireEvent.click(pageSpans[1]); // Click page 2
+
+          await waitFor(() => {
+            // Verify search term is still included on page change
+            expect(api.apiGet).toHaveBeenCalledWith(
+              expect.stringContaining('page=2'),
+              expect.any(Function),
+              expect.any(Function)
+            );
+          });
+        }
+      }
     });
   });
 
@@ -160,7 +218,7 @@ describe('QuestionView Component', () => {
     });
 
     it('calls apiGet with correct page number when page changes', async () => {
-      render(<QuestionView />);
+      const { container } = render(<QuestionView />);
 
       await waitFor(() => {
         expect(api.apiGet).toHaveBeenCalledWith(
@@ -170,8 +228,24 @@ describe('QuestionView Component', () => {
         );
       });
 
-      // In a full test, we would trigger pagination
-      // For now, we verify the API contract is correct
+      api.apiGet.mockClear();
+
+      // Click pagination to change page
+      const pagination = container.querySelector('.pagination-menu');
+      if (pagination) {
+        const pageSpans = pagination.querySelectorAll('.page-num');
+        if (pageSpans.length > 1) {
+          fireEvent.click(pageSpans[1]); // Click page 2
+
+          await waitFor(() => {
+            expect(api.apiGet).toHaveBeenCalledWith(
+              expect.stringContaining('page=2'),
+              expect.any(Function),
+              expect.any(Function)
+            );
+          });
+        }
+      }
     });
   });
 

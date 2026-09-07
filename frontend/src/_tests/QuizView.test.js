@@ -1,5 +1,5 @@
 import React from 'react';
-import { render, waitFor } from '@testing-library/react';
+import { render, waitFor, fireEvent } from '@testing-library/react';
 import QuizView from '../components/QuizView';
 import * as api from '../utils/api';
 
@@ -122,8 +122,7 @@ describe('QuizView Component', () => {
       
       const select = container.querySelector('select');
       if (select) {
-        select.value = '1';
-        select.dispatchEvent(new Event('change', { bubbles: true }));
+        fireEvent.change(select, { target: { value: '1' } });
         
         await waitFor(() => {
           expect(onSelectUser).toHaveBeenCalledWith(1);

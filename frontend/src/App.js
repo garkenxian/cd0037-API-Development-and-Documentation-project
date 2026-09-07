@@ -14,6 +14,7 @@ class App extends Component {
       users: [],
       selectedUserId: null,
       usersLoaded: false,
+      usersLoadError: null,
     };
   }
 
@@ -25,11 +26,15 @@ class App extends Component {
         this.setState({
           users: result.users || [],
           usersLoaded: true,
+          usersLoadError: null,
         });
       },
       (error) => {
-        // Non-critical: allow app to work without users list
-        this.setState({ usersLoaded: true });
+        // Track error but allow app to work without users list
+        this.setState({ 
+          usersLoaded: true,
+          usersLoadError: error || 'Failed to load users',
+        });
       }
     );
   }
@@ -49,11 +54,23 @@ class App extends Component {
             <Route 
               path='/play' 
               render={() => (
-                <QuizView
-                  users={this.state.users}
-                  selectedUserId={this.state.selectedUserId}
-                  onSelectUser={this.selectUser}
-                />
+                <div>
+                  {!this.state.usersLoaded && (
+                    <div className='loading-message'>
+                      Loading users...
+                    </div>
+                  )}
+                  {this.state.usersLoaded && this.state.usersLoadError && (
+                    <div className='error-message'>
+                      {this.state.usersLoadError}
+                    </div>
+                  )}
+                  <QuizView
+                    users={this.state.users}
+                    selectedUserId={this.state.selectedUserId}
+                    onSelectUser={this.selectUser}
+                  />
+                </div>
               )}
             />
             <Route component={QuestionView} />
