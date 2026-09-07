@@ -13,6 +13,7 @@ class QuestionView extends Component {
       totalQuestions: 0,
       categories: {},
       currentCategory: null,
+      activeSearch: null,
     };
   }
 
@@ -21,8 +22,14 @@ class QuestionView extends Component {
   }
 
   getQuestions = () => {
+    // Build URL with page and optional search parameters
+    let url = `/questions?page=${this.state.page}`;
+    if (this.state.activeSearch) {
+      url += `&search=${encodeURIComponent(this.state.activeSearch)}`;
+    }
+
     apiGet(
-      `/questions?page=${this.state.page}`,
+      url,
       (result) => {
         this.setState({
           questions: result.questions,
@@ -68,6 +75,8 @@ class QuestionView extends Component {
           questions: result.questions,
           totalQuestions: result.total_questions,
           currentCategory: result.current_category,
+          activeSearch: null,
+          page: 1,
         });
       },
       (error) => {
@@ -85,6 +94,7 @@ class QuestionView extends Component {
           questions: result.questions,
           totalQuestions: result.total_questions,
           currentCategory: result.current_category,
+          activeSearch: searchTerm,
           page: 1,
         });
       },

@@ -4,7 +4,7 @@ import '../stylesheets/FormView.css';
 
 class FormView extends Component {
   constructor(props) {
-    super();
+    super(props);
     this.state = {
       question: '',
       answer: '',
@@ -14,6 +14,7 @@ class FormView extends Component {
       error: '',
       successMessage: '',
     };
+    this.successMessageTimer = null;
   }
 
   componentDidMount() {
@@ -26,6 +27,13 @@ class FormView extends Component {
         this.setState({ error: 'Unable to load categories. Please try your request again' });
       }
     );
+  }
+
+  componentWillUnmount() {
+    // Clean up timer to prevent state updates after unmount
+    if (this.successMessageTimer) {
+      clearTimeout(this.successMessageTimer);
+    }
   }
 
   submitQuestion = (event) => {
@@ -48,9 +56,13 @@ class FormView extends Component {
           successMessage: 'Question added successfully!',
           error: '',
         });
-        // Clear success message after 3 seconds
-        setTimeout(() => {
+        // Clear success message after 3 seconds with proper cleanup
+        if (this.successMessageTimer) {
+          clearTimeout(this.successMessageTimer);
+        }
+        this.successMessageTimer = setTimeout(() => {
           this.setState({ successMessage: '' });
+          this.successMessageTimer = null;
         }, 3000);
       },
       (error) => {

@@ -4,8 +4,11 @@ import '../stylesheets/QuizView.css';
 
 class QuizView extends Component {
   constructor(props) {
-    super();
+    super(props);
     this.state = {
+      // User selection - only show if no user is selected
+      showUserSelector: !props.selectedUserId,
+      
       // Category selection
       quizCategory: null,
       categories: {},
@@ -45,7 +48,25 @@ class QuizView extends Component {
     );
   }
 
+  handleUserSelect = (event) => {
+    const userId = parseInt(event.target.value);
+    this.props.onSelectUser(userId);
+    this.setState({ 
+      showUserSelector: false,
+      error: null,
+    });
+  };
+
   selectCategory = ({ type, id = 0 }) => {
+    // Validate user is selected before starting game
+    if (!this.props.selectedUserId) {
+      this.setState({ 
+        error: 'Please select a user before starting a game.',
+        showUserSelector: true,
+      });
+      return;
+    }
+    
     this.setState({ quizCategory: { type, id }, isLoading: true }, this.startGame);
   };
 
@@ -54,9 +75,8 @@ class QuizView extends Component {
   };
 
   startGame = () => {
-    // For now, use hardcoded user_id = 1 (in a real app, this would come from auth)
     const gameData = {
-      user_id: 1,
+      user_id: this.props.selectedUserId,
       category_id: this.state.quizCategory.id,
       number_of_questions: this.state.currentScore.total_questions,
     };
@@ -80,10 +100,20 @@ class QuizView extends Component {
         });
       },
       (error) => {
-        this.setState({
-          error: error || 'Unable to start game. Please try again.',
-          isLoading: false,
-        });
+        // Check if error is due to missing user
+        const userNotFoundError = error && (error.includes('not found') || error.includes('User'));
+        if (userNotFoundError) {
+          this.setState({
+            error: `Selected user (ID: ${this.props.selectedUserId}) not found. Please select a different user.`,
+            isLoading: false,
+            showUserSelector: true,
+          });
+        } else {
+          this.setState({
+            error: error || 'Unable to start game. Please try again.',
+            isLoading: false,
+          });
+        }
       }
     );
   };
@@ -167,6 +197,7 @@ class QuizView extends Component {
 
   restartGame = () => {
     this.setState({
+      showUserSelector: false,
       quizCategory: null,
       gameSessionId: null,
       currentQuestionNumber: 1,
@@ -185,10 +216,50 @@ class QuizView extends Component {
     });
   };
 
+  renderUserSelector() {
+    return (
+      <div className='quiz-play-holder'>
+        <div className='choose-header'>Select a User</div>
+        <div className='user-selector'>
+          <select onChange={this.handleUserSelect} defaultValue=''>
+            <option value=''>-- Choose a User --</option>
+            {this.props.users && this.props.users.map((user) => (
+              <option key={user.id} value={user.id}>
+                {user.username} (ID: {user.id})
+              </option>
+            ))}
+          </select>
+          {(!this.props.users || this.props.users.length === 0) && (
+            <div className='error-message'>
+              No users available. Please create a user on the Questions tab first.
+            </div>
+          )}
+        </div>
+        <div className='back-button' onClick={() => this.setState({ showUserSelector: false })}>
+          Back to Categories
+        </div>
+      </div>
+    );
+  }
+
   renderPrePlay() {
+    // Show user selector if needed
+    if (this.state.showUserSelector || !this.props.selectedUserId) {
+      return this.renderUserSelector();
+    }
+
     return (
       <div className='quiz-play-holder'>
         <div className='choose-header'>Choose Category</div>
+        <div className='current-user'>
+          Playing as: <strong>{this.getCurrentUsername()}</strong>
+          <button 
+            className='change-user-button'
+            onClick={() => this.setState({ showUserSelector: true })}
+          >
+            Change User
+          </button>
+        </div>
         <div className='category-holder'>
           <div 
             className='play-category' 
@@ -213,6 +284,14 @@ class QuizView extends Component {
         </div>
       </div>
     );
+  }
+
+  getCurrentUsername() {
+    if (!this.props.selectedUserId || !this.props.users) {
+      return 'Unknown';
+    }
+    const user = this.props.users.find(u => u.id === this.props.selectedUserId);
+    return user ? user.username : 'Unknown';
   }
 
   renderFinalScore() {

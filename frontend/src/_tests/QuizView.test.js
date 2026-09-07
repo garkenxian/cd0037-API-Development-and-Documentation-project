@@ -1,46 +1,227 @@
 import React from 'react';
-import { render } from '@testing-library/react';
+import { render, waitFor } from '@testing-library/react';
 import QuizView from '../components/QuizView';
+import * as api from '../utils/api';
+
+// Mock the api module
+jest.mock('../utils/api');
 
 describe('QuizView Component', () => {
-  // Mock jQuery AJAX calls
+  const mockUsers = [
+    { id: 1, username: 'alice' },
+    { id: 2, username: 'bob' },
+  ];
+
+  const mockCategories = {
+    1: 'Science',
+    2: 'Art',
+    3: 'Geography',
+  };
+
   beforeEach(() => {
-    global.$ = jest.fn(() => ({
-      ajax: jest.fn(),
-    }));
+    jest.clearAllMocks();
+    
+    // Mock categories endpoint
+    api.apiGet.mockImplementation((url, onSuccess, onError) => {
+      if (url.includes('/categories')) {
+        onSuccess({ categories: mockCategories });
+      } else if (url.includes('/games')) {
+        onSuccess({
+          game_session_id: 42,
+          current_question_number: 1,
+          current_score: {
+            correct: 0,
+            total_answered: 0,
+            total_questions: 5,
+          },
+          question: {
+            id: 7,
+            question: 'What is H2O?',
+            category: 1,
+            difficulty: 2,
+            rating: 4.5,
+          },
+        });
+      }
+    });
+
+    // Mock POST endpoints
+    api.apiPost.mockImplementation((url, data, onSuccess, onError) => {
+      if (url === '/games') {
+        onSuccess({
+          game_session_id: 42,
+          current_question_number: 1,
+          current_score: {
+            correct: 0,
+            total_answered: 0,
+            total_questions: 5,
+          },
+          question: {
+            id: 7,
+            question: 'What is H2O?',
+            category: 1,
+            difficulty: 2,
+            rating: 4.5,
+          },
+        });
+      }
+    });
   });
 
-  it('renders without crashing', () => {
-    render(<QuizView />);
+  describe('Initialization', () => {
+    it('renders without crashing', () => {
+      render(<QuizView users={mockUsers} selectedUserId={1} onSelectUser={jest.fn()} />);
+      expect(api.apiGet).toHaveBeenCalledWith(
+        '/categories',
+        expect.any(Function),
+        expect.any(Function)
+      );
+    });
+
+    it('loads categories on mount', async () => {
+      render(<QuizView users={mockUsers} selectedUserId={1} onSelectUser={jest.fn()} />);
+      
+      await waitFor(() => {
+        expect(api.apiGet).toHaveBeenCalledWith(
+          '/categories',
+          expect.any(Function),
+          expect.any(Function)
+        );
+      });
+    });
+
+    it('shows user selector when no user is selected', () => {
+      const { container } = render(
+        <QuizView users={mockUsers} selectedUserId={null} onSelectUser={jest.fn()} />
+      );
+      expect(container.textContent).toContain('Select a User');
+    });
+
+    it('shows category selector when user is selected', () => {
+      const { container } = render(
+        <QuizView users={mockUsers} selectedUserId={1} onSelectUser={jest.fn()} />
+      );
+      expect(container.textContent).toContain('Choose Category');
+    });
+
+    it('displays correct user in header when selected', () => {
+      const { container } = render(
+        <QuizView users={mockUsers} selectedUserId={1} onSelectUser={jest.fn()} />
+      );
+      expect(container.textContent).toContain('Playing as');
+      expect(container.textContent).toContain('alice');
+    });
   });
 
-  it('initializes with correct state properties', () => {
-    const { container } = render(<QuizView />);
-    // Component should render with quiz-view container
-    expect(container.querySelector('.quiz-view') || container.querySelector('div')).toBeTruthy();
+  describe('User Selection', () => {
+    it('calls onSelectUser when user is selected', async () => {
+      const onSelectUser = jest.fn();
+      const { container } = render(
+        <QuizView users={mockUsers} selectedUserId={null} onSelectUser={onSelectUser} />
+      );
+      
+      const select = container.querySelector('select');
+      if (select) {
+        select.value = '1';
+        select.dispatchEvent(new Event('change', { bubbles: true }));
+        
+        await waitFor(() => {
+          expect(onSelectUser).toHaveBeenCalledWith(1);
+        });
+      }
+    });
+
+    it('shows error when no users available', () => {
+      const { container } = render(
+        <QuizView users={[]} selectedUserId={null} onSelectUser={jest.fn()} />
+      );
+      expect(container.textContent).toContain('No users available');
+    });
   });
 
-  it('initializes with zero correct answers', () => {
-    const { container } = render(<QuizView />);
-    // Component renders properly
-    expect(container).toBeTruthy();
+  describe('Game Flow', () => {
+    it('starts game with POST /games call', async () => {
+      const { container } = render(
+        <QuizView users={mockUsers} selectedUserId={1} onSelectUser={jest.fn()} />
+      );
+
+      await waitFor(() => {
+        const categoryButtons = container.querySelectorAll('.play-category');
+        if (categoryButtons.length > 0) {
+          categoryButtons[0].dispatchEvent(new Event('click', { bubbles: true }));
+        }
+      });
+
+      await waitFor(() => {
+        expect(api.apiPost).toHaveBeenCalledWith(
+          '/games',
+          expect.objectContaining({
+            user_id: 1,
+          }),
+          expect.any(Function),
+          expect.any(Function)
+        );
+      });
+    });
+
+    it('prevents game start without valid user', async () => {
+      const { container } = render(
+        <QuizView users={mockUsers} selectedUserId={null} onSelectUser={jest.fn()} />
+      );
+
+      // Should show user selector, not category selector
+      expect(container.textContent).toContain('Select a User');
+      expect(api.apiPost).not.toHaveBeenCalled();
+    });
   });
 
-  it('initializes with empty previous questions list', () => {
-    const { container } = render(<QuizView />);
-    // Component renders properly
-    expect(container).toBeTruthy();
-  });
+  describe('Error Handling', () => {
+    it('displays error message when game start fails', async () => {
+      api.apiPost.mockImplementation((url, data, onSuccess, onError) => {
+        if (url === '/games') {
+          onError('User not found');
+        }
+      });
 
-  it('initializes with no force end', () => {
-    const { container } = render(<QuizView />);
-    // Component renders properly
-    expect(container).toBeTruthy();
-  });
+      const { container } = render(
+        <QuizView users={mockUsers} selectedUserId={1} onSelectUser={jest.fn()} />
+      );
 
-  it('initializes with empty guess', () => {
-    const { container } = render(<QuizView />);
-    // Component renders properly
-    expect(container).toBeTruthy();
+      // Click category to start game
+      await waitFor(() => {
+        const categoryButtons = container.querySelectorAll('.play-category');
+        if (categoryButtons.length > 0) {
+          categoryButtons[0].dispatchEvent(new Event('click', { bubbles: true }));
+        }
+      });
+
+      await waitFor(() => {
+        expect(container.textContent).toContain('not found');
+      });
+    });
+
+    it('shows error message if user not found', async () => {
+      api.apiPost.mockImplementation((url, data, onSuccess, onError) => {
+        if (url === '/games') {
+          onError('User not found');
+        }
+      });
+
+      const { container } = render(
+        <QuizView users={mockUsers} selectedUserId={1} onSelectUser={jest.fn()} />
+      );
+
+      // Click category to start game
+      await waitFor(() => {
+        const categoryButtons = container.querySelectorAll('.play-category');
+        if (categoryButtons.length > 0) {
+          categoryButtons[0].dispatchEvent(new Event('click', { bubbles: true }));
+        }
+      });
+
+      await waitFor(() => {
+        expect(container.textContent).toContain('not found');
+      });
+    });
   });
 });
