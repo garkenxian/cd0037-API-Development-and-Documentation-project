@@ -2,7 +2,7 @@ import React, { Component } from 'react';
 import '../stylesheets/App.css';
 import Question from './Question';
 import Search from './Search';
-import $ from 'jquery';
+import { apiGet, apiDelete } from '../utils/api';
 
 class QuestionView extends Component {
   constructor() {
@@ -21,23 +21,20 @@ class QuestionView extends Component {
   }
 
   getQuestions = () => {
-    $.ajax({
-      url: `/questions?page=${this.state.page}`, //TODO: update request URL
-      type: 'GET',
-      success: (result) => {
+    apiGet(
+      `/questions?page=${this.state.page}`,
+      (result) => {
         this.setState({
           questions: result.questions,
           totalQuestions: result.total_questions,
           categories: result.categories,
           currentCategory: result.current_category,
         });
-        return;
       },
-      error: (error) => {
+      (error) => {
         alert('Unable to load questions. Please try your request again');
-        return;
-      },
-    });
+      }
+    );
   };
 
   selectPage(num) {
@@ -64,67 +61,55 @@ class QuestionView extends Component {
   }
 
   getByCategory = (id) => {
-    $.ajax({
-      url: `/categories/${id}/questions`, //TODO: update request URL
-      type: 'GET',
-      success: (result) => {
+    apiGet(
+      `/categories/${id}/questions`,
+      (result) => {
         this.setState({
           questions: result.questions,
           totalQuestions: result.total_questions,
           currentCategory: result.current_category,
         });
-        return;
       },
-      error: (error) => {
+      (error) => {
         alert('Unable to load questions. Please try your request again');
-        return;
-      },
-    });
+      }
+    );
   };
 
   submitSearch = (searchTerm) => {
-    $.ajax({
-      url: `/questions`, //TODO: update request URL
-      type: 'POST',
-      dataType: 'json',
-      contentType: 'application/json',
-      data: JSON.stringify({ searchTerm: searchTerm }),
-      xhrFields: {
-        withCredentials: true,
-      },
-      crossDomain: true,
-      success: (result) => {
+    // Use GET /questions?search=... instead of POST /questions
+    apiGet(
+      `/questions?search=${encodeURIComponent(searchTerm)}`,
+      (result) => {
         this.setState({
           questions: result.questions,
           totalQuestions: result.total_questions,
           currentCategory: result.current_category,
+          page: 1,
         });
-        return;
       },
-      error: (error) => {
+      (error) => {
         alert('Unable to load questions. Please try your request again');
-        return;
-      },
-    });
+      }
+    );
   };
 
   questionAction = (id) => (action) => {
     if (action === 'DELETE') {
       if (window.confirm('are you sure you want to delete the question?')) {
-        $.ajax({
-          url: `/questions/${id}`, //TODO: update request URL
-          type: 'DELETE',
-          success: (result) => {
+        apiDelete(
+          `/questions/${id}`,
+          (result) => {
             this.getQuestions();
           },
-          error: (error) => {
-            alert('Unable to load questions. Please try your request again');
-            return;
-          },
-        });
+          (error) => {
+            alert('Unable to delete question. Please try your request again');
+          }
+        );
       }
     }
   };
+
 
   render() {
     return (
@@ -132,7 +117,7 @@ class QuestionView extends Component {
         <div className='categories-list'>
           <h2
             onClick={() => {
-              this.getQuestions();
+              this.setState({ page: 1 }, () => this.getQuestions());
             }}
           >
             Categories
