@@ -11,6 +11,7 @@ class QuestionView extends Component {
       questions: [],
       page: 1,
       totalQuestions: 0,
+      totalPages: 1,
       categories: {},
       currentCategory: null,
       activeSearch: null,
@@ -34,6 +35,7 @@ class QuestionView extends Component {
         this.setState({
           questions: result.questions,
           totalQuestions: result.total_questions,
+          totalPages: result.total_pages,
           categories: result.categories,
           currentCategory: result.current_category,
         });
@@ -50,8 +52,7 @@ class QuestionView extends Component {
 
   createPagination() {
     let pageNumbers = [];
-    let maxPage = Math.ceil(this.state.totalQuestions / 10);
-    for (let i = 1; i <= maxPage; i++) {
+    for (let i = 1; i <= this.state.totalPages; i++) {
       pageNumbers.push(
         <span
           key={i}
@@ -74,6 +75,7 @@ class QuestionView extends Component {
         this.setState({
           questions: result.questions,
           totalQuestions: result.total_questions,
+          totalPages: result.total_pages,
           currentCategory: result.current_category,
           activeSearch: null,
           page: 1,
@@ -93,6 +95,7 @@ class QuestionView extends Component {
         this.setState({
           questions: result.questions,
           totalQuestions: result.total_questions,
+          totalPages: result.total_pages,
           currentCategory: result.current_category,
           activeSearch: searchTerm,
           page: 1,
@@ -110,10 +113,20 @@ class QuestionView extends Component {
         apiDelete(
           `/questions/${id}`,
           (result) => {
-            this.getQuestions();
+            // After deletion, check if we need to go back a page
+            // If current page > totalPages after deletion, go to previous page
+            if (this.state.page > this.state.totalPages - 1) {
+              this.setState({ page: Math.max(1, this.state.page - 1) }, () => {
+                this.getQuestions();
+              });
+            } else {
+              this.getQuestions();
+            }
           },
           (error) => {
-            alert('Unable to delete question. Please try your request again');
+            // Show backend error message if available, otherwise generic message
+            const errorMsg = typeof error === 'string' ? error : 'Unable to delete question. Please try your request again';
+            alert(errorMsg);
           }
         );
       }
