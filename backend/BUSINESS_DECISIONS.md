@@ -487,3 +487,12 @@ UI calculates percentage (3/5 = 60%) from this data, giving frontend flexibility
 - No password or login required (simple for now)
 - User can create quiz under any username (not restricted)
 - No admin designation yet for category CRUD (assumed future enhancement)
+
+---
+
+## UI Assets
+
+**Question Mark SVG Icon**
+- Source: https://www.svgrepo.com/svg/104987/question-mark-button
+- Used for: Question display icon in frontend UI
+- Attribution: SVGRepo (free SVG graphics repository)

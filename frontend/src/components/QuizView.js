@@ -9,6 +9,13 @@ class QuizView extends Component {
       // User selection - only show if no user is selected
       showUserSelector: !props.selectedUserId,
       
+      // User creation form
+      showCreateUserForm: false,
+      newUsername: '',
+      newEmail: '',
+      userCreationError: null,
+      isCreatingUser: false,
+      
       // Category selection
       quizCategory: null,
       categories: {},
@@ -56,6 +63,119 @@ class QuizView extends Component {
       error: null,
     });
   };
+
+  handleCreateUserInputChange = (event) => {
+    const { name, value } = event.target;
+    this.setState({ [name]: value });
+  };
+
+  handleCreateUser = (event) => {
+    event.preventDefault();
+    const { newUsername, newEmail } = this.state;
+    
+    if (!newUsername.trim()) {
+      this.setState({ userCreationError: 'Username is required' });
+      return;
+    }
+
+    this.setState({ isCreatingUser: true, userCreationError: null });
+
+    const userData = {
+      username: newUsername,
+      email: newEmail || null,
+    };
+
+    apiPost(
+      '/users',
+      userData,
+      (result) => {
+        // User created successfully - refresh users list and auto-select
+        if (this.props.onUsersRefresh) {
+          this.props.onUsersRefresh(() => {
+            // Auto-select the newly created user
+            this.props.onSelectUser(result.id);
+            this.setState({ 
+              showUserSelector: false,
+              showCreateUserForm: false,
+              newUsername: '',
+              newEmail: '',
+              userCreationError: null,
+              isCreatingUser: false,
+              error: null,
+            });
+          });
+        } else {
+          // Fallback if callback not provided
+          this.setState({ 
+            showUserSelector: false,
+            showCreateUserForm: false,
+            newUsername: '',
+            newEmail: '',
+            userCreationError: null,
+            isCreatingUser: false,
+            error: null,
+          });
+          this.props.onSelectUser(result.id);
+        }
+      },
+      (error) => {
+        this.setState({ 
+          userCreationError: typeof error === 'string' ? error : 'Failed to create user. Please try again.',
+          isCreatingUser: false,
+        });
+      }
+    );
+  };
+
+  renderCreateUserForm() {
+    return (
+      <div className='create-user-form'>
+        <h3>Create New User</h3>
+        <form onSubmit={this.handleCreateUser}>
+          <input
+            type='text'
+            name='newUsername'
+            placeholder='Username'
+            value={this.state.newUsername}
+            onChange={this.handleCreateUserInputChange}
+            disabled={this.state.isCreatingUser}
+            required
+          />
+          <input
+            type='email'
+            name='newEmail'
+            placeholder='Email (optional)'
+            value={this.state.newEmail}
+            onChange={this.handleCreateUserInputChange}
+            disabled={this.state.isCreatingUser}
+          />
+          {this.state.userCreationError && (
+            <div className='error-message'>{this.state.userCreationError}</div>
+          )}
+          <button 
+            type='submit'
+            disabled={this.state.isCreatingUser}
+            className='button'
+          >
+            {this.state.isCreatingUser ? 'Creating...' : 'Create User'}
+          </button>
+          <button
+            type='button'
+            onClick={() => this.setState({ 
+              showCreateUserForm: false,
+              userCreationError: null,
+              newUsername: '',
+              newEmail: '',
+            })}
+            className='button cancel-button'
+            disabled={this.state.isCreatingUser}
+          >
+            Cancel
+          </button>
+        </form>
+      </div>
+    );
+  }
 
   selectCategory = ({ type, id = 0 }) => {
     // Validate user is selected before starting game
@@ -217,6 +337,14 @@ class QuizView extends Component {
   };
 
   renderUserSelector() {
+    if (this.state.showCreateUserForm) {
+      return (
+        <div className='quiz-play-holder'>
+          {this.renderCreateUserForm()}
+        </div>
+      );
+    }
+
     return (
       <div className='quiz-play-holder'>
         <div className='choose-header'>Select a User</div>
@@ -231,10 +359,16 @@ class QuizView extends Component {
           </select>
           {(!this.props.users || this.props.users.length === 0) && (
             <div className='error-message'>
-              No users available. Please create a user on the Questions tab first.
+              No users available. Create one below to get started!
             </div>
           )}
         </div>
+        <button
+          className='button create-user-button'
+          onClick={() => this.setState({ showCreateUserForm: true })}
+        >
+          + Create New User
+        </button>
         <div className='back-button' onClick={() => this.setState({ showUserSelector: false })}>
           Back to Categories
         </div>

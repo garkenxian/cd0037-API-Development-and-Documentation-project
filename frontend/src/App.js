@@ -43,6 +43,26 @@ class App extends Component {
     this.setState({ selectedUserId: userId });
   };
 
+  refreshUsers = (callback) => {
+    // Fetch updated users list and call callback when complete
+    apiGet(
+      '/users',
+      (result) => {
+        this.setState({
+          users: result.users || [],
+          usersLoaded: true,
+          usersLoadError: null,
+        }, callback);
+      },
+      (error) => {
+        this.setState({ 
+          usersLoaded: true,
+          usersLoadError: error || 'Failed to load users',
+        }, callback);
+      }
+    );
+  };
+
   render() {
     return (
       <div className='App'>
@@ -70,6 +90,7 @@ class App extends Component {
                       users={this.state.users}
                       selectedUserId={this.state.selectedUserId}
                       onSelectUser={this.selectUser}
+                      onUsersRefresh={this.refreshUsers}
                     />
                   )}
                 </div>
