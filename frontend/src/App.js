@@ -65,11 +65,13 @@ class App extends Component {
                       {this.state.usersLoadError}
                     </div>
                   )}
-                  <QuizView
-                    users={this.state.users}
-                    selectedUserId={this.state.selectedUserId}
-                    onSelectUser={this.selectUser}
-                  />
+                  {this.state.usersLoaded && !this.state.usersLoadError && (
+                    <QuizView
+                      users={this.state.users}
+                      selectedUserId={this.state.selectedUserId}
+                      onSelectUser={this.selectUser}
+                    />
+                  )}
                 </div>
               )}
             />
