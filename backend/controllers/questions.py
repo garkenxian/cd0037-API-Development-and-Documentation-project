@@ -169,13 +169,22 @@ def delete_question(question_id):
     Delete a question by ID
     
     Returns: {deleted: id, success: true}
-    Errors: 404 (not found)
+    Errors: 
+    - 404: Question not found
+    - 422: Cannot delete due to referential constraints (e.g., game session answers)
     """
     try:
         question = QuestionService.get_question(question_id)
         from data_access import db
-        db.session.delete(question)
-        db.session.commit()
+        from sqlalchemy.exc import IntegrityError
+        
+        try:
+            db.session.delete(question)
+            db.session.commit()
+        except IntegrityError as ie:
+            db.session.rollback()
+            # FK constraint violation - question is referenced by game session answers
+            abort(422, description="Cannot delete question because it has related game answer history. Delete the associated game sessions first.")
         
         return jsonify({
             'deleted': question_id,
@@ -184,4 +193,5 @@ def delete_question(question_id):
     except ValueError:
         abort(404, description=f"Question with id {question_id} not found")
     except Exception as e:
+        # Log the exception for debugging but don't expose internals to client
         abort(500, description="Internal server error while deleting question")
