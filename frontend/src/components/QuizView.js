@@ -78,11 +78,16 @@ class QuizView extends Component {
       return;
     }
 
+    if (!newEmail.trim()) {
+      this.setState({ userCreationError: 'Email is required' });
+      return;
+    }
+
     this.setState({ isCreatingUser: true, userCreationError: null });
 
     const userData = {
       username: newUsername,
-      email: newEmail || null,
+      email: newEmail,
     };
 
     apiPost(
@@ -144,10 +149,11 @@ class QuizView extends Component {
           <input
             type='email'
             name='newEmail'
-            placeholder='Email (optional)'
+            placeholder='Email'
             value={this.state.newEmail}
             onChange={this.handleCreateUserInputChange}
             disabled={this.state.isCreatingUser}
+            required
           />
           {this.state.userCreationError && (
             <div className='error-message'>{this.state.userCreationError}</div>
