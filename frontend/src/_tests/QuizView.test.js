@@ -147,7 +147,7 @@ describe('QuizView Component', () => {
       await waitFor(() => {
         const categoryButtons = container.querySelectorAll('.play-category');
         if (categoryButtons.length > 0) {
-          categoryButtons[0].dispatchEvent(new Event('click', { bubbles: true }));
+          fireEvent.click(categoryButtons[0]);
         }
       });
 
@@ -190,7 +190,7 @@ describe('QuizView Component', () => {
       await waitFor(() => {
         const categoryButtons = container.querySelectorAll('.play-category');
         if (categoryButtons.length > 0) {
-          categoryButtons[0].dispatchEvent(new Event('click', { bubbles: true }));
+          fireEvent.click(categoryButtons[0]);
         }
       });
 
@@ -214,7 +214,7 @@ describe('QuizView Component', () => {
       await waitFor(() => {
         const categoryButtons = container.querySelectorAll('.play-category');
         if (categoryButtons.length > 0) {
-          categoryButtons[0].dispatchEvent(new Event('click', { bubbles: true }));
+          fireEvent.click(categoryButtons[0]);
         }
       });
 

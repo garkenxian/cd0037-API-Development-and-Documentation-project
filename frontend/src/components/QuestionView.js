@@ -113,15 +113,29 @@ class QuestionView extends Component {
         apiDelete(
           `/questions/${id}`,
           (result) => {
-            // After deletion, check if we need to go back a page
-            // If current page > totalPages after deletion, go to previous page
-            if (this.state.page > this.state.totalPages - 1) {
-              this.setState({ page: Math.max(1, this.state.page - 1) }, () => {
-                this.getQuestions();
-              });
-            } else {
-              this.getQuestions();
-            }
+            // After deletion, try to refresh current page
+            // Only move to previous page if current page no longer exists
+            this.getQuestionsForPage(this.state.page, 
+              (success) => {
+                // Current page still has items, stay on it
+                this.setState({});
+              },
+              (error) => {
+                // If 404 (page out of range), try previous page
+                if (error && error.includes && error.includes('out of range')) {
+                  const previousPage = Math.max(1, this.state.page - 1);
+                  if (previousPage !== this.state.page) {
+                    this.setState({ page: previousPage }, () => {
+                      this.getQuestions();
+                    });
+                  }
+                } else {
+                  // Non-404 error, show it to user
+                  const errorMsg = typeof error === 'string' ? error : 'Error loading questions';
+                  alert(errorMsg);
+                }
+              }
+            );
           },
           (error) => {
             // Show backend error message if available, otherwise generic message
@@ -131,6 +145,30 @@ class QuestionView extends Component {
         );
       }
     }
+  };
+
+  getQuestionsForPage = (page, onSuccess, onError) => {
+    // Helper to fetch questions for a specific page without setting state
+    const url = this.state.activeSearch 
+      ? `/questions?page=${page}&search=${this.state.activeSearch}`
+      : `/questions?page=${page}`;
+    
+    apiGet(
+      url,
+      (result) => {
+        this.setState({
+          questions: result.questions,
+          totalQuestions: result.total_questions,
+          totalPages: result.total_pages,
+          categories: result.categories,
+          currentCategory: result.current_category,
+        });
+        if (onSuccess) onSuccess(result);
+      },
+      (error) => {
+        if (onError) onError(error);
+      }
+    );
   };
 
 
