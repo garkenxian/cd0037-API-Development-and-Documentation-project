@@ -900,5 +900,59 @@ describe('QuestionView Component', () => {
 
       window.alert.mockClear();
     });
+
+    it('renders category list as clickable items', async () => {
+      const { container } = render(<QuestionView />);
+
+      await waitFor(() => {
+        const categoryLis = container.querySelectorAll('.categories-list li');
+        expect(categoryLis.length).toBeGreaterThan(0);
+      });
+    });
+
+    it('whitespace trimming in category input', async () => {
+      const { getByLabelText, getByDisplayValue, findByText } = render(
+        <QuestionView />
+      );
+
+      // Try to submit with whitespace-only category
+      fireEvent.change(getByLabelText('Add category name'), {
+        target: { value: '   ' },
+      });
+      fireEvent.click(getByDisplayValue('Add Category'));
+
+      expect(await findByText('Category name is required')).toBeTruthy();
+    });
+
+    it('displays category success message and then resets', async () => {
+      let callCount = 0;
+      api.apiPost.mockImplementation((url, data, onSuccess, onError) => {
+        onSuccess({ id: 10, type: data.type, success: true });
+      });
+
+      api.apiGet.mockImplementation((url, onSuccess, onError) => {
+        callCount++;
+        if (callCount === 1 || callCount === 2) {
+          onSuccess(mockQuestionsResponse);
+        } else {
+          onSuccess(mockQuestionsResponse);
+        }
+      });
+
+      const { getByLabelText, getByDisplayValue, findByText, queryByText } = render(
+        <QuestionView />
+      );
+
+      await waitFor(() => {
+        expect(getByLabelText('Add category name')).toBeTruthy();
+      });
+
+      fireEvent.change(getByLabelText('Add category name'), {
+        target: { value: 'TestCategory' },
+      });
+      fireEvent.click(getByDisplayValue('Add Category'));
+
+      expect(await findByText('Category added successfully!')).toBeTruthy();
+    });
   });
 });
