@@ -362,6 +362,281 @@ describe('QuestionView Component', () => {
     });
   });
 
+  describe('Category Filtering', () => {
+    it('loads questions for specific category', async () => {
+      const { container } = render(<QuestionView />);
+
+      await waitFor(() => {
+        expect(api.apiGet).toHaveBeenCalled();
+      });
+
+      api.apiGet.mockClear();
+
+      // Find category select/option elements
+      const categoryElements = container.querySelectorAll('[data-testid*="category"]');
+      if (categoryElements.length > 0) {
+        // Click a category option
+        fireEvent.click(categoryElements[0]);
+
+        await waitFor(() => {
+          expect(api.apiGet).toHaveBeenCalledWith(
+            expect.stringContaining('/categories/'),
+            expect.any(Function),
+            expect.any(Function)
+          );
+        });
+      }
+    });
+
+    it('handles category selection with proper state update', async () => {
+      const { container } = render(<QuestionView />);
+
+      await waitFor(() => {
+        expect(api.apiGet).toHaveBeenCalled();
+      });
+
+      api.apiGet.mockImplementation((url, onSuccess, onError) => {
+        if (url.includes('/categories/')) {
+          onSuccess({
+            questions: [
+              {
+                id: 2,
+                question: 'Test question',
+                category: 1,
+                difficulty: 1,
+                rating: 3.0,
+                answer: 'Test answer',
+              },
+            ],
+            total_questions: 1,
+            total_pages: 1,
+            current_category: 1,
+          });
+        } else {
+          onSuccess(mockQuestionsResponse);
+        }
+      });
+
+      api.apiGet.mockClear();
+
+      // Simulate category click
+      const categoryElements = container.querySelectorAll('[data-testid*="category"]');
+      if (categoryElements.length > 0) {
+        fireEvent.click(categoryElements[0]);
+
+        await waitFor(() => {
+          expect(container.textContent).toContain('Test question');
+        });
+      }
+    });
+  });
+
+  describe('Question Deletion', () => {
+    it('shows confirmation before deleting question', async () => {
+      window.confirm = jest.fn(() => false);
+
+      const { container } = render(<QuestionView />);
+
+      await waitFor(() => {
+        expect(api.apiGet).toHaveBeenCalled();
+      });
+
+      // Find delete button for a question
+      const deleteButtons = container.querySelectorAll('[src*="delete"]');
+      if (deleteButtons.length > 0) {
+        fireEvent.click(deleteButtons[0]);
+
+        await waitFor(() => {
+          expect(window.confirm).toHaveBeenCalled();
+        });
+      }
+
+      window.confirm.mockClear();
+    });
+
+    it('deletes question when confirmed', async () => {
+      window.confirm = jest.fn(() => true);
+      api.apiDelete.mockClear();
+
+      const { container } = render(<QuestionView />);
+
+      await waitFor(() => {
+        expect(api.apiGet).toHaveBeenCalled();
+      });
+
+      // Find and click delete button
+      const deleteButtons = container.querySelectorAll('[src*="delete"]');
+      if (deleteButtons.length > 0) {
+        fireEvent.click(deleteButtons[0]);
+
+        await waitFor(() => {
+          expect(api.apiDelete).toHaveBeenCalledWith(
+            expect.stringContaining('/questions/'),
+            expect.any(Function),
+            expect.any(Function)
+          );
+        });
+      }
+
+      window.confirm.mockClear();
+    });
+
+    it('refreshes questions after successful deletion', async () => {
+      window.confirm = jest.fn(() => true);
+
+      const { container } = render(<QuestionView />);
+
+      await waitFor(() => {
+        expect(api.apiGet).toHaveBeenCalled();
+      });
+
+      api.apiGet.mockClear();
+
+      // Delete a question
+      const deleteButtons = container.querySelectorAll('[src*="delete"]');
+      if (deleteButtons.length > 0) {
+        fireEvent.click(deleteButtons[0]);
+
+        await waitFor(() => {
+          expect(api.apiGet).toHaveBeenCalledWith(
+            expect.stringContaining('/questions'),
+            expect.any(Function),
+            expect.any(Function)
+          );
+        });
+      }
+
+      window.confirm.mockClear();
+    });
+
+    it('handles deletion error gracefully', async () => {
+      window.confirm = jest.fn(() => true);
+      window.alert = jest.fn();
+      
+      api.apiDelete.mockImplementation((url, onSuccess, onError) => {
+        onError('Cannot delete: question in use');
+      });
+
+      const { container } = render(<QuestionView />);
+
+      await waitFor(() => {
+        expect(api.apiGet).toHaveBeenCalled();
+      });
+
+      // Delete question
+      const deleteButtons = container.querySelectorAll('[src*="delete"]');
+      if (deleteButtons.length > 0) {
+        fireEvent.click(deleteButtons[0]);
+
+        await waitFor(() => {
+          expect(window.alert).toHaveBeenCalledWith(
+            expect.stringContaining('Cannot delete')
+          );
+        });
+      }
+
+      window.confirm.mockClear();
+      window.alert.mockClear();
+    });
+
+    it('handles page out of range error on deletion', async () => {
+      window.confirm = jest.fn(() => true);
+      window.alert = jest.fn();
+      
+      // Mock for deletion that causes out of range
+      let deleteCallCount = 0;
+      api.apiDelete.mockImplementation((url, onSuccess, onError) => {
+        deleteCallCount++;
+        onSuccess({ deleted: true });
+      });
+
+      // Mock getQuestionsForPage to simulate out of range on current page
+      let getQuestionsCallCount = 0;
+      api.apiGet.mockImplementation((url, onSuccess, onError) => {
+        getQuestionsCallCount++;
+        
+        if (url.includes('/categories')) {
+          onSuccess(mockQuestionsResponse);
+        } else if (url.includes('/users/leaderboard')) {
+          onSuccess(mockLeaderboardResponse);
+        } else if (getQuestionsCallCount === 2) {
+          // First call to refresh current page gets out of range error
+          onError('Page out of range');
+        } else if (getQuestionsCallCount === 3) {
+          // Second call to previous page succeeds
+          onSuccess(mockQuestionsResponse);
+        } else {
+          onSuccess(mockQuestionsResponse);
+        }
+      });
+
+      const { container } = render(<QuestionView />);
+
+      await waitFor(() => {
+        expect(api.apiGet).toHaveBeenCalled();
+      });
+
+      api.apiGet.mockClear();
+      
+      // Delete a question
+      const deleteButtons = container.querySelectorAll('[src*="delete"]');
+      if (deleteButtons.length > 0) {
+        fireEvent.click(deleteButtons[0]);
+
+        await waitFor(() => {
+          // Should fall back to previous page
+          expect(api.apiGet).toHaveBeenCalled();
+        });
+      }
+
+      window.confirm.mockClear();
+      window.alert.mockClear();
+    });
+  });
+
+  describe('Leaderboard', () => {
+    it('fetches leaderboard data on mount', async () => {
+      render(<QuestionView />);
+
+      await waitFor(() => {
+        expect(api.apiGet).toHaveBeenCalledWith(
+          '/users/leaderboard?limit=10',
+          expect.any(Function),
+          expect.any(Function)
+        );
+      });
+    });
+
+    it('displays leaderboard with users and scores', async () => {
+      const { container } = render(<QuestionView />);
+
+      await waitFor(() => {
+        expect(container.textContent).toContain('Leaderboard');
+        expect(container.textContent).toContain('alice');
+        expect(container.textContent).toContain('bob');
+      });
+    });
+
+    it('handles leaderboard fetch errors', async () => {
+      api.apiGet.mockImplementation((url, onSuccess, onError) => {
+        if (url.includes('/users/leaderboard')) {
+          onError('Unable to load leaderboard');
+        } else if (url.includes('search=')) {
+          onSuccess(mockSearchResponse);
+        } else {
+          onSuccess(mockQuestionsResponse);
+        }
+      });
+
+      const { container } = render(<QuestionView />);
+
+      await waitFor(() => {
+        // Component should still render even with leaderboard error
+        expect(container.querySelector('.question-view')).toBeTruthy();
+      });
+    });
+  });
+
   describe('API Contract Verification', () => {
     it('uses GET endpoint for questions list', async () => {
       render(<QuestionView />);

@@ -285,4 +285,228 @@ describe('FormView Component', () => {
       });
     });
   });
+
+  describe('Field Handling', () => {
+    it('updates question field on input change', async () => {
+      const { container } = render(<FormView />);
+
+      await waitFor(() => {
+        expect(api.apiGet).toHaveBeenCalled();
+      });
+
+      const questionInput = container.querySelector('input[name="question"]');
+      fireEvent.change(questionInput, { target: { value: 'New question?' } });
+
+      expect(questionInput.value).toBe('New question?');
+    });
+
+    it('updates answer field on input change', async () => {
+      const { container } = render(<FormView />);
+
+      await waitFor(() => {
+        expect(api.apiGet).toHaveBeenCalled();
+      });
+
+      const answerInput = container.querySelector('input[name="answer"]');
+      fireEvent.change(answerInput, { target: { value: 'New answer' } });
+
+      expect(answerInput.value).toBe('New answer');
+    });
+
+    it('updates difficulty select on change', async () => {
+      const { container } = render(<FormView />);
+
+      await waitFor(() => {
+        expect(api.apiGet).toHaveBeenCalled();
+      });
+
+      const difficultySelect = container.querySelector('select[name="difficulty"]');
+      fireEvent.change(difficultySelect, { target: { value: '3' } });
+
+      expect(difficultySelect.value).toBe('3');
+    });
+
+    it('updates category select on change', async () => {
+      const { container } = render(<FormView />);
+
+      await waitFor(() => {
+        expect(api.apiGet).toHaveBeenCalled();
+      });
+
+      const categorySelect = container.querySelector('select[name="category"]');
+      fireEvent.change(categorySelect, { target: { value: '2' } });
+
+      expect(categorySelect.value).toBe('2');
+    });
+  });
+
+  describe('Type Conversion', () => {
+    it('converts difficulty to integer before posting', async () => {
+      const { container } = render(<FormView />);
+
+      await waitFor(() => {
+        expect(api.apiGet).toHaveBeenCalled();
+      });
+
+      const questionInput = container.querySelector('input[name="question"]');
+      const answerInput = container.querySelector('input[name="answer"]');
+      const difficultySelect = container.querySelector('select[name="difficulty"]');
+
+      fireEvent.change(questionInput, { target: { value: 'Q?' } });
+      fireEvent.change(answerInput, { target: { value: 'A' } });
+      fireEvent.change(difficultySelect, { target: { value: '4' } });
+
+      const form = container.querySelector('form');
+      fireEvent.submit(form);
+
+      await waitFor(() => {
+        expect(api.apiPost).toHaveBeenCalledWith(
+          '/questions',
+          expect.objectContaining({
+            difficulty: 4, // Must be integer, not string
+          }),
+          expect.any(Function),
+          expect.any(Function)
+        );
+      });
+    });
+
+    it('converts category to integer before posting', async () => {
+      const { container } = render(<FormView />);
+
+      await waitFor(() => {
+        expect(api.apiGet).toHaveBeenCalled();
+      });
+
+      const questionInput = container.querySelector('input[name="question"]');
+      const answerInput = container.querySelector('input[name="answer"]');
+      const categorySelect = container.querySelector('select[name="category"]');
+
+      fireEvent.change(questionInput, { target: { value: 'Q?' } });
+      fireEvent.change(answerInput, { target: { value: 'A' } });
+      fireEvent.change(categorySelect, { target: { value: '3' } });
+
+      const form = container.querySelector('form');
+      fireEvent.submit(form);
+
+      await waitFor(() => {
+        expect(api.apiPost).toHaveBeenCalledWith(
+          '/questions',
+          expect.objectContaining({
+            category: 3, // Must be integer, not string
+          }),
+          expect.any(Function),
+          expect.any(Function)
+        );
+      });
+    });
+  });
+
+  describe('Form State', () => {
+    it('has correct default difficulty value', async () => {
+      const { container } = render(<FormView />);
+
+      await waitFor(() => {
+        expect(api.apiGet).toHaveBeenCalled();
+      });
+
+      const difficultySelect = container.querySelector('select[name="difficulty"]');
+      expect(difficultySelect.value).toBe('1');
+    });
+
+    it('has correct default category value', async () => {
+      const { container } = render(<FormView />);
+
+      await waitFor(() => {
+        expect(api.apiGet).toHaveBeenCalled();
+      });
+
+      const categorySelect = container.querySelector('select[name="category"]');
+      expect(categorySelect.value).toBe('1');
+    });
+
+    it('renders all difficulty options', async () => {
+      const { container } = render(<FormView />);
+
+      await waitFor(() => {
+        expect(api.apiGet).toHaveBeenCalled();
+      });
+
+      const difficultySelect = container.querySelector('select[name="difficulty"]');
+      const options = difficultySelect.querySelectorAll('option');
+
+      expect(options.length).toBe(5);
+      Array.from(options).forEach((opt, index) => {
+        expect(opt.value).toBe(String(index + 1));
+      });
+    });
+
+    it('renders category options from API response', async () => {
+      const { container } = render(<FormView />);
+
+      await waitFor(() => {
+        expect(container.textContent).toContain('Science');
+      });
+
+      const categorySelect = container.querySelector('select[name="category"]');
+      const options = categorySelect.querySelectorAll('option');
+
+      expect(options.length).toBe(3);
+      expect(options[0].textContent).toContain('Science');
+    });
+  });
+
+  describe('Form Labels', () => {
+    it('has label for question field', async () => {
+      const { container } = render(<FormView />);
+
+      await waitFor(() => {
+        expect(api.apiGet).toHaveBeenCalled();
+      });
+
+      const labels = container.querySelectorAll('label');
+      const questionLabel = Array.from(labels).find(l => l.textContent.includes('Question'));
+
+      expect(questionLabel).toBeTruthy();
+    });
+
+    it('has label for answer field', async () => {
+      const { container } = render(<FormView />);
+
+      await waitFor(() => {
+        expect(api.apiGet).toHaveBeenCalled();
+      });
+
+      const labels = container.querySelectorAll('label');
+      const answerLabel = Array.from(labels).find(l => l.textContent.includes('Answer'));
+
+      expect(answerLabel).toBeTruthy();
+    });
+
+    it('has label for difficulty field', async () => {
+      const { container } = render(<FormView />);
+
+      await waitFor(() => {
+        expect(api.apiGet).toHaveBeenCalled();
+      });
+
+      const labels = container.querySelectorAll('label');
+      const difficultyLabel = Array.from(labels).find(l => l.textContent.includes('Difficulty'));
+
+      expect(difficultyLabel).toBeTruthy();
+    });
+
+    it('has label for category field', async () => {
+      const { container } = render(<FormView />);
+
+      await waitFor(() => {
+        expect(api.apiGet).toHaveBeenCalled();
+      });
+
+      const labels = container.querySelectorAll('label');
+      const categoryLabel = Array.from(labels).find(l => l.textContent.includes('Category'));
+
+      expect(categoryLabel).toBeTruthy();
+    });
+  });
 });
