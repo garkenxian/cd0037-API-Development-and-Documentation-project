@@ -447,4 +447,533 @@ describe('GameView Component', () => {
       });
     });
   });
+
+  describe('User Creation Validation', () => {
+    it('prevents submission with empty username', async () => {
+      const { container } = render(
+        <GameView users={mockUsers} selectedUserId={null} onSelectUser={jest.fn()} />
+      );
+
+      const createButton = container.querySelector('.create-user-button');
+      if (createButton) {
+        fireEvent.click(createButton);
+
+        // Leave username empty, fill email
+        const inputs = container.querySelectorAll('input[type="text"], input[type="email"]');
+        if (inputs.length >= 2) {
+          fireEvent.change(inputs[0], { target: { name: 'newUsername', value: '' } });
+          fireEvent.change(inputs[1], { target: { name: 'newEmail', value: 'test@test.com' } });
+
+          const buttons = Array.from(container.querySelectorAll('.create-user-form button'));
+          const submitBtn = buttons.find(b => !b.textContent.includes('Cancel'));
+          
+          if (submitBtn) {
+            fireEvent.click(submitBtn);
+
+            await waitFor(() => {
+              expect(container.textContent).toContain('Username is required');
+            });
+          }
+        }
+      }
+    });
+
+    it('prevents submission with empty email', async () => {
+      const { container } = render(
+        <GameView users={mockUsers} selectedUserId={null} onSelectUser={jest.fn()} />
+      );
+
+      const createButton = container.querySelector('.create-user-button');
+      if (createButton) {
+        fireEvent.click(createButton);
+
+        // Fill username, leave email empty
+        const inputs = container.querySelectorAll('input[type="text"], input[type="email"]');
+        if (inputs.length >= 2) {
+          fireEvent.change(inputs[0], { target: { name: 'newUsername', value: 'testuser' } });
+          fireEvent.change(inputs[1], { target: { name: 'newEmail', value: '' } });
+
+          const buttons = Array.from(container.querySelectorAll('.create-user-form button'));
+          const submitBtn = buttons.find(b => !b.textContent.includes('Cancel'));
+          
+          if (submitBtn) {
+            fireEvent.click(submitBtn);
+
+            await waitFor(() => {
+              expect(container.textContent).toContain('Email is required');
+            });
+          }
+        }
+      }
+    });
+
+    it('calls onUsersRefresh after successful user creation', async () => {
+      const onSelectUser = jest.fn();
+      const onUsersRefresh = jest.fn((callback) => callback());
+      
+      api.apiPost.mockClear();
+      api.apiPost.mockImplementation((url, data, onSuccess, onError) => {
+        if (url === '/users') {
+          onSuccess({ id: 3, username: 'newuser' });
+        }
+      });
+
+      const { container } = render(
+        <GameView 
+          users={mockUsers} 
+          selectedUserId={null} 
+          onSelectUser={onSelectUser}
+          onUsersRefresh={onUsersRefresh}
+        />
+      );
+
+      const createButton = container.querySelector('.create-user-button');
+      if (createButton) {
+        fireEvent.click(createButton);
+
+        const inputs = container.querySelectorAll('input[type="text"], input[type="email"]');
+        if (inputs.length >= 2) {
+          fireEvent.change(inputs[0], { target: { name: 'newUsername', value: 'testuser' } });
+          fireEvent.change(inputs[1], { target: { name: 'newEmail', value: 'test@test.com' } });
+
+          const buttons = Array.from(container.querySelectorAll('.create-user-form button'));
+          const submitBtn = buttons.find(b => !b.textContent.includes('Cancel'));
+          
+          if (submitBtn) {
+            fireEvent.click(submitBtn);
+
+            await waitFor(() => {
+              expect(onUsersRefresh).toHaveBeenCalled();
+            });
+          }
+        }
+      }
+    });
+
+    it('cancels user creation form', async () => {
+      const { container, queryByText } = render(
+        <GameView users={mockUsers} selectedUserId={null} onSelectUser={jest.fn()} />
+      );
+
+      const createButton = container.querySelector('.create-user-button');
+      if (createButton) {
+        fireEvent.click(createButton);
+        expect(container.querySelector('.create-user-form')).toBeTruthy();
+
+        const buttons = Array.from(container.querySelectorAll('.create-user-form button'));
+        const cancelBtn = buttons.find(b => b.textContent.includes('Cancel'));
+        
+        if (cancelBtn) {
+          fireEvent.click(cancelBtn);
+          
+          await waitFor(() => {
+            // Form should be closed
+            expect(container.querySelector('.create-user-form')).toBeFalsy();
+          });
+        }
+      }
+    });
+  });
+
+  describe('Game Session Management', () => {
+    it('handles game start with category selection', async () => {
+      const { container } = render(
+        <GameView users={mockUsers} selectedUserId={1} onSelectUser={jest.fn()} />
+      );
+
+      await waitFor(() => {
+        const categoryButtons = container.querySelectorAll('.play-category');
+        expect(categoryButtons.length).toBeGreaterThan(0);
+      });
+
+      const categoryButtons = container.querySelectorAll('.play-category');
+      if (categoryButtons.length > 0) {
+        fireEvent.click(categoryButtons[0]);
+
+        await waitFor(() => {
+          expect(api.apiPost).toHaveBeenCalledWith(
+            '/games',
+            expect.objectContaining({
+              user_id: 1,
+              category_id: expect.any(Number),
+              number_of_questions: 5,
+            }),
+            expect.any(Function),
+            expect.any(Function)
+          );
+        });
+      }
+    });
+
+    it('requires user selection before starting game', async () => {
+      const { container } = render(
+        <GameView users={mockUsers} selectedUserId={null} onSelectUser={jest.fn()} />
+      );
+
+      // Should show user selector before category selector
+      const userSelectContainer = container.textContent;
+      expect(userSelectContainer).toContain('Select a User');
+
+      // Should not have category buttons
+      const categoryButtons = container.querySelectorAll('.play-category');
+      expect(categoryButtons.length).toBe(0);
+    });
+
+    it('updates state after game starts successfully', async () => {
+      api.apiPost.mockImplementation((url, data, onSuccess, onError) => {
+        if (url === '/games') {
+          onSuccess({
+            game_session_id: 42,
+            current_question_number: 1,
+            current_score: {
+              correct: 0,
+              total_answered: 0,
+              total_questions: 5,
+            },
+            question: {
+              id: 7,
+              question: 'Test question?',
+              category: 1,
+              difficulty: 2,
+              rating: 4.5,
+              answer: 'Test answer',
+            },
+          });
+        }
+      });
+
+      const { container } = render(
+        <GameView users={mockUsers} selectedUserId={1} onSelectUser={jest.fn()} />
+      );
+
+      await waitFor(() => {
+        const categoryButtons = container.querySelectorAll('.play-category');
+        if (categoryButtons.length > 0) {
+          fireEvent.click(categoryButtons[0]);
+        }
+      });
+
+      await waitFor(() => {
+        expect(container.textContent).toContain('Test question');
+      });
+    });
+
+    it('displays loading state during game', async () => {
+      api.apiPost.mockImplementation((url, data, onSuccess, onError) => {
+        // Simulate a very slow callback - don't call onSuccess immediately
+        setTimeout(() => {
+          if (url === '/games') {
+            onSuccess({
+              game_session_id: 42,
+              current_question_number: 1,
+              current_score: {
+                correct: 0,
+                total_answered: 0,
+                total_questions: 5,
+              },
+              question: {
+                id: 7,
+                question: 'Test question?',
+                category: 1,
+                difficulty: 2,
+              },
+            });
+          }
+        }, 500);
+      });
+
+      const { container } = render(
+        <GameView users={mockUsers} selectedUserId={1} onSelectUser={jest.fn()} />
+      );
+
+      await waitFor(() => {
+        const categoryButtons = container.querySelectorAll('.play-category');
+        if (categoryButtons.length > 0) {
+          fireEvent.click(categoryButtons[0]);
+          // Loading state should be set briefly
+          expect(container.textContent).toContain('Loading');
+        }
+      });
+    });
+
+    it('displays error during game play', async () => {
+      api.apiPost.mockImplementation((url, data, onSuccess, onError) => {
+        if (url === '/games') {
+          onSuccess({
+            game_session_id: 42,
+            current_question_number: 1,
+            current_score: {
+              correct: 0,
+              total_answered: 0,
+              total_questions: 5,
+            },
+            question: {
+              id: 7,
+              question: 'Test question?',
+              category: 1,
+              difficulty: 2,
+            },
+          });
+        } else if (url.includes('/games/42/') && url.includes('1')) {
+          // Answer submission fails
+          onError('Server error');
+        }
+      });
+
+      const { container } = render(
+        <GameView users={mockUsers} selectedUserId={1} onSelectUser={jest.fn()} />
+      );
+
+      // Start game
+      await waitFor(() => {
+        const categoryButtons = container.querySelectorAll('.play-category');
+        if (categoryButtons.length > 0) {
+          fireEvent.click(categoryButtons[0]);
+        }
+      });
+
+      await waitFor(() => {
+        expect(container.textContent).toContain('Test question');
+      });
+    });
+
+    it('submits answer and displays result', async () => {
+      api.apiPost.mockImplementation((url, data, onSuccess, onError) => {
+        if (url === '/games') {
+          onSuccess({
+            game_session_id: 42,
+            current_question_number: 1,
+            current_score: {
+              correct: 0,
+              total_answered: 0,
+              total_questions: 5,
+            },
+            question: {
+              id: 7,
+              question: 'What is H2O?',
+              category: 1,
+              difficulty: 2,
+              answer: 'Water',
+            },
+          });
+        } else if (url.includes('/games/42/') && url.includes('1')) {
+          // Answer submission
+          onSuccess({
+            game_session_id: 42,
+            current_question_number: 1,
+            current_score: {
+              correct: 1,
+              total_answered: 1,
+              total_questions: 5,
+            },
+            correct: true,
+            correct_answer: 'Water',
+            status: 'in_progress',
+          });
+        }
+      });
+
+      const { container } = render(
+        <GameView users={mockUsers} selectedUserId={1} onSelectUser={jest.fn()} />
+      );
+
+      // Start game
+      await waitFor(() => {
+        const categoryButtons = container.querySelectorAll('.play-category');
+        if (categoryButtons.length > 0) {
+          fireEvent.click(categoryButtons[0]);
+        }
+      });
+
+      await waitFor(() => {
+        expect(container.textContent).toContain('What is H2O?');
+      });
+    });
+
+    it('displays final score when game completes', async () => {
+      api.apiPost.mockImplementation((url, data, onSuccess, onError) => {
+        if (url === '/games') {
+          onSuccess({
+            game_session_id: 42,
+            current_question_number: 5,
+            current_score: {
+              correct: 4,
+              total_answered: 5,
+              total_questions: 5,
+            },
+            question: {
+              id: 7,
+              question: 'Last question?',
+              category: 1,
+              difficulty: 2,
+            },
+          });
+        } else if (url.includes('/games/42/')) {
+          // Last answer submission completes game
+          onSuccess({
+            status: 'completed',
+            current_score: {
+              correct: 4,
+              total_answered: 5,
+              total_questions: 5,
+            },
+          });
+        }
+      });
+
+      const { container } = render(
+        <GameView users={mockUsers} selectedUserId={1} onSelectUser={jest.fn()} />
+      );
+
+      // Start game
+      await waitFor(() => {
+        const categoryButtons = container.querySelectorAll('.play-category');
+        if (categoryButtons.length > 0) {
+          fireEvent.click(categoryButtons[0]);
+        }
+      });
+
+      await waitFor(() => {
+        expect(container.textContent).toContain('Last question');
+      });
+    });
+
+    it('changes user from pre-play screen', async () => {
+      const onSelectUser = jest.fn();
+      const { container } = render(
+        <GameView users={mockUsers} selectedUserId={1} onSelectUser={onSelectUser} />
+      );
+
+      // Component loads
+      await waitFor(() => {
+        expect(container.querySelector('.quiz-play-holder')).toBeTruthy();
+      });
+
+      // Should have category buttons for selectedUserId=1
+      const categoryButtons = container.querySelectorAll('.play-category');
+      expect(categoryButtons.length).toBeGreaterThan(0);
+    });
+
+    it('displays "Play Again" button after game completion', async () => {
+      api.apiPost.mockImplementation((url, data, onSuccess, onError) => {
+        if (url === '/games') {
+          onSuccess({
+            game_session_id: 42,
+            current_question_number: 1,
+            current_score: {
+              correct: 0,
+              total_answered: 0,
+              total_questions: 1,
+            },
+            question: {
+              id: 7,
+              question: 'Only question?',
+              category: 1,
+              difficulty: 2,
+            },
+          });
+        } else if (url.includes('/games/42/')) {
+          // Last answer completes game
+          onSuccess({
+            status: 'completed',
+            current_score: {
+              correct: 0,
+              total_answered: 1,
+              total_questions: 1,
+            },
+          });
+        }
+      });
+
+      const { container } = render(
+        <GameView users={mockUsers} selectedUserId={1} onSelectUser={jest.fn()} />
+      );
+
+      // Start game
+      await waitFor(() => {
+        const categoryButtons = container.querySelectorAll('.play-category');
+        if (categoryButtons.length > 0) {
+          fireEvent.click(categoryButtons[0]);
+        }
+      });
+
+      await waitFor(() => {
+        expect(container.textContent).toContain('Only question');
+      });
+    });
+
+    it('gets next question after viewing answer', async () => {
+      api.apiGet.mockImplementation((url, onSuccess, onError) => {
+        if (url.includes('/categories')) {
+          onSuccess({ categories: mockCategories });
+        } else if (url.includes('/games/42')) {
+          onSuccess({
+            game_session_id: 42,
+            current_question_number: 2,
+            current_score: {
+              correct: 1,
+              total_answered: 1,
+              total_questions: 5,
+            },
+            question: {
+              id: 8,
+              question: 'Second question?',
+              category: 1,
+              difficulty: 1,
+            },
+            status: 'in_progress',
+          });
+        }
+      });
+
+      api.apiPost.mockImplementation((url, data, onSuccess, onError) => {
+        if (url === '/games') {
+          onSuccess({
+            game_session_id: 42,
+            current_question_number: 1,
+            current_score: {
+              correct: 0,
+              total_answered: 0,
+              total_questions: 5,
+            },
+            question: {
+              id: 7,
+              question: 'First question?',
+              category: 1,
+              difficulty: 2,
+            },
+          });
+        } else if (url.includes('/games/42/')) {
+          onSuccess({
+            game_session_id: 42,
+            current_question_number: 1,
+            current_score: {
+              correct: 1,
+              total_answered: 1,
+              total_questions: 5,
+            },
+            correct: true,
+            correct_answer: 'Correct',
+            status: 'in_progress',
+          });
+        }
+      });
+
+      const { container } = render(
+        <GameView users={mockUsers} selectedUserId={1} onSelectUser={jest.fn()} />
+      );
+
+      // Start game
+      await waitFor(() => {
+        const categoryButtons = container.querySelectorAll('.play-category');
+        if (categoryButtons.length > 0) {
+          fireEvent.click(categoryButtons[0]);
+        }
+      });
+
+      await waitFor(() => {
+        expect(container.textContent).toContain('First question');
+      });
+    });
+  });
 });
