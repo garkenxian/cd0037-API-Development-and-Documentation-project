@@ -1,5 +1,5 @@
 import React from 'react';
-import { render, screen } from '@testing-library/react';
+import { render, screen, fireEvent } from '@testing-library/react';
 import Header from '../components/Header';
 
 describe('Header Component', () => {
@@ -26,5 +26,44 @@ describe('Header Component', () => {
   it('has correct CSS class', () => {
     const { container } = render(<Header />);
     expect(container.querySelector('.App-header')).toBeTruthy();
+  });
+
+  describe('Navigation', () => {
+    beforeEach(() => {
+      // Mock window.location
+      delete window.location;
+      window.location = { 
+        href: '', 
+        origin: 'http://localhost:3000' 
+      };
+    });
+
+    it('navigates to home when title is clicked', () => {
+      render(<Header />);
+      const title = screen.getByRole('heading', { level: 1 });
+      fireEvent.click(title);
+      expect(window.location.href).toBe('http://localhost:3000');
+    });
+
+    it('navigates to home when List Questions is clicked', () => {
+      render(<Header />);
+      const headings = screen.getAllByRole('heading', { level: 2 });
+      fireEvent.click(headings[0]);
+      expect(window.location.href).toBe('http://localhost:3000');
+    });
+
+    it('navigates to add page when Add Questions is clicked', () => {
+      render(<Header />);
+      const headings = screen.getAllByRole('heading', { level: 2 });
+      fireEvent.click(headings[1]);
+      expect(window.location.href).toBe('http://localhost:3000/add');
+    });
+
+    it('navigates to play page when Play A Game is clicked', () => {
+      render(<Header />);
+      const headings = screen.getAllByRole('heading', { level: 2 });
+      fireEvent.click(headings[2]);
+      expect(window.location.href).toBe('http://localhost:3000/play');
+    });
   });
 });
