@@ -1,8 +1,8 @@
 import React, { Component } from 'react';
 import { apiGet, apiPost } from '../utils/api';
-import '../stylesheets/QuizView.css';
+import '../stylesheets/GameView.css';
 
-class QuizView extends Component {
+class GameView extends Component {
   constructor(props) {
     super(props);
     this.state = {
@@ -19,6 +19,7 @@ class QuizView extends Component {
       // Category selection
       quizCategory: null,
       categories: {},
+      numberOfQuestions: 5,
       
       // Game session state
       gameSessionId: null,
@@ -200,11 +201,15 @@ class QuizView extends Component {
     this.setState({ [event.target.name]: event.target.value });
   };
 
+  handleNumberOfQuestionsChange = (event) => {
+    this.setState({ numberOfQuestions: parseInt(event.target.value, 10) });
+  };
+
   startGame = () => {
     const gameData = {
       user_id: this.props.selectedUserId,
       category_id: this.state.quizCategory.id,
-      number_of_questions: this.state.currentScore.total_questions,
+      number_of_questions: this.state.numberOfQuestions,
     };
 
     apiPost(
@@ -400,6 +405,23 @@ class QuizView extends Component {
             Change User
           </button>
         </div>
+        <div className='question-count-control'>
+          <label htmlFor='numberOfQuestions'>Number of questions</label>
+          <select
+            id='numberOfQuestions'
+            value={this.state.numberOfQuestions}
+            onChange={this.handleNumberOfQuestionsChange}
+          >
+            {Array.from({ length: 20 }, (_, index) => index + 1).map((count) => (
+              <option key={count} value={count}>
+                {count}
+              </option>
+            ))}
+          </select>
+          <div className='question-count-hint'>
+            Choose 1-20. Availability depends on category question count.
+          </div>
+        </div>
         <div className='category-holder'>
           <div 
             className='play-category' 
@@ -512,4 +534,4 @@ class QuizView extends Component {
   }
 }
 
-export default QuizView;
+export default GameView;

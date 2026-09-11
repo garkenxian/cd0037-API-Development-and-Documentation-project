@@ -4,7 +4,7 @@ import './stylesheets/App.css';
 import FormView from './components/FormView';
 import QuestionView from './components/QuestionView';
 import Header from './components/Header';
-import QuizView from './components/QuizView';
+import GameView from './components/GameView';
 import { apiGet } from './utils/api';
 
 class App extends Component {
@@ -86,7 +86,7 @@ class App extends Component {
                     </div>
                   )}
                   {this.state.usersLoaded && !this.state.usersLoadError && (
-                    <QuizView
+                    <GameView
                       users={this.state.users}
                       selectedUserId={this.state.selectedUserId}
                       onSelectUser={this.selectUser}

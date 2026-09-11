@@ -1,12 +1,12 @@
 import React from 'react';
 import { render, waitFor, fireEvent } from '@testing-library/react';
-import QuizView from '../components/QuizView';
+import GameView from '../components/GameView';
 import * as api from '../utils/api';
 
 // Mock the api module
 jest.mock('../utils/api');
 
-describe('QuizView Component', () => {
+describe('GameView Component', () => {
   const mockUsers = [
     { id: 1, username: 'alice' },
     { id: 2, username: 'bob' },
@@ -70,7 +70,7 @@ describe('QuizView Component', () => {
 
   describe('Initialization', () => {
     it('renders without crashing', () => {
-      render(<QuizView users={mockUsers} selectedUserId={1} onSelectUser={jest.fn()} />);
+      render(<GameView users={mockUsers} selectedUserId={1} onSelectUser={jest.fn()} />);
       expect(api.apiGet).toHaveBeenCalledWith(
         '/categories',
         expect.any(Function),
@@ -79,7 +79,7 @@ describe('QuizView Component', () => {
     });
 
     it('loads categories on mount', async () => {
-      render(<QuizView users={mockUsers} selectedUserId={1} onSelectUser={jest.fn()} />);
+      render(<GameView users={mockUsers} selectedUserId={1} onSelectUser={jest.fn()} />);
       
       await waitFor(() => {
         expect(api.apiGet).toHaveBeenCalledWith(
@@ -92,21 +92,21 @@ describe('QuizView Component', () => {
 
     it('shows user selector when no user is selected', () => {
       const { container } = render(
-        <QuizView users={mockUsers} selectedUserId={null} onSelectUser={jest.fn()} />
+        <GameView users={mockUsers} selectedUserId={null} onSelectUser={jest.fn()} />
       );
       expect(container.textContent).toContain('Select a User');
     });
 
     it('shows category selector when user is selected', () => {
       const { container } = render(
-        <QuizView users={mockUsers} selectedUserId={1} onSelectUser={jest.fn()} />
+        <GameView users={mockUsers} selectedUserId={1} onSelectUser={jest.fn()} />
       );
       expect(container.textContent).toContain('Choose Category');
     });
 
     it('displays correct user in header when selected', () => {
       const { container } = render(
-        <QuizView users={mockUsers} selectedUserId={1} onSelectUser={jest.fn()} />
+        <GameView users={mockUsers} selectedUserId={1} onSelectUser={jest.fn()} />
       );
       expect(container.textContent).toContain('Playing as');
       expect(container.textContent).toContain('alice');
@@ -117,7 +117,7 @@ describe('QuizView Component', () => {
     it('calls onSelectUser when user is selected', async () => {
       const onSelectUser = jest.fn();
       const { container } = render(
-        <QuizView users={mockUsers} selectedUserId={null} onSelectUser={onSelectUser} />
+        <GameView users={mockUsers} selectedUserId={null} onSelectUser={onSelectUser} />
       );
       
       const select = container.querySelector('select');
@@ -132,7 +132,7 @@ describe('QuizView Component', () => {
 
     it('shows error when no users available', () => {
       const { container } = render(
-        <QuizView users={[]} selectedUserId={null} onSelectUser={jest.fn()} />
+        <GameView users={[]} selectedUserId={null} onSelectUser={jest.fn()} />
       );
       expect(container.textContent).toContain('No users available');
     });
@@ -141,7 +141,7 @@ describe('QuizView Component', () => {
   describe('Game Flow', () => {
     it('starts game with POST /games call', async () => {
       const { container } = render(
-        <QuizView users={mockUsers} selectedUserId={1} onSelectUser={jest.fn()} />
+        <GameView users={mockUsers} selectedUserId={1} onSelectUser={jest.fn()} />
       );
 
       await waitFor(() => {
@@ -156,6 +156,36 @@ describe('QuizView Component', () => {
           '/games',
           expect.objectContaining({
             user_id: 1,
+            number_of_questions: 5,
+          }),
+          expect.any(Function),
+          expect.any(Function)
+        );
+      });
+    });
+
+    it('starts game with user-selected number of questions', async () => {
+      const { container, getByLabelText } = render(
+        <GameView users={mockUsers} selectedUserId={1} onSelectUser={jest.fn()} />
+      );
+
+      fireEvent.change(getByLabelText('Number of questions'), {
+        target: { value: '10' },
+      });
+
+      await waitFor(() => {
+        const categoryButtons = container.querySelectorAll('.play-category');
+        if (categoryButtons.length > 0) {
+          fireEvent.click(categoryButtons[0]);
+        }
+      });
+
+      await waitFor(() => {
+        expect(api.apiPost).toHaveBeenCalledWith(
+          '/games',
+          expect.objectContaining({
+            user_id: 1,
+            number_of_questions: 10,
           }),
           expect.any(Function),
           expect.any(Function)
@@ -165,7 +195,7 @@ describe('QuizView Component', () => {
 
     it('prevents game start without valid user', async () => {
       const { container } = render(
-        <QuizView users={mockUsers} selectedUserId={null} onSelectUser={jest.fn()} />
+        <GameView users={mockUsers} selectedUserId={null} onSelectUser={jest.fn()} />
       );
 
       // Should show user selector, not category selector
@@ -183,7 +213,7 @@ describe('QuizView Component', () => {
       });
 
       const { container } = render(
-        <QuizView users={mockUsers} selectedUserId={1} onSelectUser={jest.fn()} />
+        <GameView users={mockUsers} selectedUserId={1} onSelectUser={jest.fn()} />
       );
 
       // Click category to start game
@@ -207,7 +237,7 @@ describe('QuizView Component', () => {
       });
 
       const { container } = render(
-        <QuizView users={mockUsers} selectedUserId={1} onSelectUser={jest.fn()} />
+        <GameView users={mockUsers} selectedUserId={1} onSelectUser={jest.fn()} />
       );
 
       // Click category to start game

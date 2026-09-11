@@ -25,6 +25,7 @@ describe('QuestionView Component', () => {
     ],
     total_questions: 12,
     current_page: 1,
+    total_pages: 2,
     categories: mockCategories,
     current_category: null,
   };
@@ -41,15 +42,27 @@ describe('QuestionView Component', () => {
       },
     ],
     total_questions: 1,
+    total_pages: 1,
     categories: mockCategories,
     current_category: null,
+  };
+
+  const mockLeaderboardResponse = {
+    leaderboard: [
+      { id: 1, username: 'alice', total_score: 12, games_played: 4, rank: 1 },
+      { id: 2, username: 'bob', total_score: 8, games_played: 3, rank: 2 },
+    ],
+    total_users: 2,
+    success: true,
   };
 
   beforeEach(() => {
     jest.clearAllMocks();
     
     api.apiGet.mockImplementation((url, onSuccess, onError) => {
-      if (url.includes('search=')) {
+      if (url.includes('/users/leaderboard')) {
+        onSuccess(mockLeaderboardResponse);
+      } else if (url.includes('search=')) {
         onSuccess(mockSearchResponse);
       } else {
         onSuccess(mockQuestionsResponse);
@@ -58,6 +71,10 @@ describe('QuestionView Component', () => {
 
     api.apiDelete.mockImplementation((url, onSuccess, onError) => {
       onSuccess({ deleted: true, success: true });
+    });
+
+    api.apiPost.mockImplementation((url, data, onSuccess, onError) => {
+      onSuccess({ id: 9, type: data.type, success: true });
     });
   });
 
@@ -88,6 +105,23 @@ describe('QuestionView Component', () => {
       
       await waitFor(() => {
         expect(container.textContent).toContain('What is H2O?');
+      });
+    });
+
+    it('loads and shows leaderboard entries', async () => {
+      const { container } = render(<QuestionView />);
+
+      await waitFor(() => {
+        expect(api.apiGet).toHaveBeenCalledWith(
+          '/users/leaderboard?limit=10',
+          expect.any(Function),
+          expect.any(Function)
+        );
+      });
+
+      await waitFor(() => {
+        expect(container.textContent).toContain('Leaderboard');
+        expect(container.textContent).toContain('alice: 12');
       });
     });
   });
@@ -261,6 +295,70 @@ describe('QuestionView Component', () => {
         // Component should still render even if API fails
         expect(container.querySelector('.question-view')).toBeTruthy();
       });
+    });
+
+    it('shows category create API errors', async () => {
+      api.apiPost.mockImplementation((url, data, onSuccess, onError) => {
+        onError('Category type already exists');
+      });
+
+      const { getByLabelText, getByDisplayValue, findByText } = render(
+        <QuestionView />
+      );
+
+      fireEvent.change(getByLabelText('Add category name'), {
+        target: { value: 'Science' },
+      });
+      fireEvent.click(getByDisplayValue('Add Category'));
+
+      expect(await findByText('Category type already exists')).toBeTruthy();
+    });
+  });
+
+  describe('Category Creation', () => {
+    it('creates a category and refreshes questions', async () => {
+      const { getByLabelText, getByDisplayValue } = render(<QuestionView />);
+
+      await waitFor(() => {
+        expect(api.apiGet).toHaveBeenCalledWith(
+          '/questions?page=1',
+          expect.any(Function),
+          expect.any(Function)
+        );
+      });
+
+      api.apiGet.mockClear();
+
+      fireEvent.change(getByLabelText('Add category name'), {
+        target: { value: 'Technology' },
+      });
+      fireEvent.click(getByDisplayValue('Add Category'));
+
+      await waitFor(() => {
+        expect(api.apiPost).toHaveBeenCalledWith(
+          '/categories',
+          { type: 'Technology' },
+          expect.any(Function),
+          expect.any(Function)
+        );
+      });
+
+      await waitFor(() => {
+        expect(api.apiGet).toHaveBeenCalledWith(
+          '/questions?page=1',
+          expect.any(Function),
+          expect.any(Function)
+        );
+      });
+    });
+
+    it('prevents empty category submission', async () => {
+      const { getByDisplayValue, findByText } = render(<QuestionView />);
+
+      fireEvent.click(getByDisplayValue('Add Category'));
+
+      expect(await findByText('Category name is required')).toBeTruthy();
+      expect(api.apiPost).not.toHaveBeenCalled();
     });
   });
 

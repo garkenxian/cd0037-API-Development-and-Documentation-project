@@ -2,7 +2,7 @@ import React, { Component } from 'react';
 import '../stylesheets/App.css';
 import Question from './Question';
 import Search from './Search';
-import { apiGet, apiDelete } from '../utils/api';
+import { apiGet, apiDelete, apiPost } from '../utils/api';
 
 class QuestionView extends Component {
   constructor() {
@@ -15,11 +15,17 @@ class QuestionView extends Component {
       categories: {},
       currentCategory: null,
       activeSearch: null,
+      newCategoryType: '',
+      createCategoryError: '',
+      createCategorySuccess: '',
+      leaderboard: [],
+      leaderboardError: '',
     };
   }
 
   componentDidMount() {
     this.getQuestions();
+    this.getLeaderboard();
   }
 
   getQuestions = () => {
@@ -112,28 +118,26 @@ class QuestionView extends Component {
       if (window.confirm('are you sure you want to delete the question?')) {
         apiDelete(
           `/questions/${id}`,
-          (result) => {
-            // After deletion, try to refresh current page
-            // Only move to previous page if current page no longer exists
-            this.getQuestionsForPage(this.state.page, 
-              (success) => {
-                // Current page still has items, stay on it
-                this.setState({});
-              },
+          () => {
+            // First try refreshing the current page. Only fall back if that page no longer exists.
+            this.getQuestionsForPage(
+              this.state.page,
+              null,
               (error) => {
-                // If 404 (page out of range), try previous page
-                if (error && error.includes && error.includes('out of range')) {
-                  const previousPage = Math.max(1, this.state.page - 1);
-                  if (previousPage !== this.state.page) {
-                    this.setState({ page: previousPage }, () => {
-                      this.getQuestions();
-                    });
-                  }
-                } else {
-                  // Non-404 error, show it to user
-                  const errorMsg = typeof error === 'string' ? error : 'Error loading questions';
-                  alert(errorMsg);
+                const isOutOfRange =
+                  typeof error === 'string' &&
+                  error.toLowerCase().includes('out of range');
+
+                if (isOutOfRange && this.state.page > 1) {
+                  this.getQuestionsForPage(this.state.page - 1);
+                  return;
                 }
+
+                const errorMsg =
+                  typeof error === 'string'
+                    ? error
+                    : 'Unable to load questions. Please try your request again';
+                alert(errorMsg);
               }
             );
           },
@@ -150,13 +154,14 @@ class QuestionView extends Component {
   getQuestionsForPage = (page, onSuccess, onError) => {
     // Helper to fetch questions for a specific page without setting state
     const url = this.state.activeSearch 
-      ? `/questions?page=${page}&search=${this.state.activeSearch}`
+      ? `/questions?page=${page}&search=${encodeURIComponent(this.state.activeSearch)}`
       : `/questions?page=${page}`;
     
     apiGet(
       url,
       (result) => {
         this.setState({
+          page,
           questions: result.questions,
           totalQuestions: result.total_questions,
           totalPages: result.total_pages,
@@ -167,6 +172,66 @@ class QuestionView extends Component {
       },
       (error) => {
         if (onError) onError(error);
+      }
+    );
+  };
+
+  handleCategoryInputChange = (event) => {
+    this.setState({
+      newCategoryType: event.target.value,
+      createCategoryError: '',
+      createCategorySuccess: '',
+    });
+  };
+
+  submitCategory = (event) => {
+    event.preventDefault();
+    const categoryType = this.state.newCategoryType.trim();
+
+    if (!categoryType) {
+      this.setState({ createCategoryError: 'Category name is required' });
+      return;
+    }
+
+    apiPost(
+      '/categories',
+      { type: categoryType },
+      () => {
+        this.setState(
+          {
+            newCategoryType: '',
+            createCategoryError: '',
+            createCategorySuccess: 'Category added successfully!',
+          },
+          () => this.getQuestions()
+        );
+      },
+      (error) => {
+        this.setState({
+          createCategorySuccess: '',
+          createCategoryError:
+            typeof error === 'string'
+              ? error
+              : 'Unable to add category. Please try your request again',
+        });
+      }
+    );
+  };
+
+  getLeaderboard = () => {
+    apiGet(
+      '/users/leaderboard?limit=10',
+      (result) => {
+        this.setState({
+          leaderboard: result.leaderboard || [],
+          leaderboardError: '',
+        });
+      },
+      () => {
+        this.setState({
+          leaderboard: [],
+          leaderboardError: 'Unable to load leaderboard',
+        });
       }
     );
   };
@@ -183,6 +248,24 @@ class QuestionView extends Component {
           >
             Categories
           </h2>
+          <form onSubmit={this.submitCategory}>
+            <input
+              type='text'
+              value={this.state.newCategoryType}
+              onChange={this.handleCategoryInputChange}
+              placeholder='Add category name'
+              aria-label='Add category name'
+            />
+            <input type='submit' className='button' value='Add Category' />
+          </form>
+          {this.state.createCategoryError && (
+            <div className='error-message'>{this.state.createCategoryError}</div>
+          )}
+          {this.state.createCategorySuccess && (
+            <div className='success-message'>
+              {this.state.createCategorySuccess}
+            </div>
+          )}
           <ul>
             {Object.keys(this.state.categories).map((id) => (
               <li
@@ -204,6 +287,22 @@ class QuestionView extends Component {
             ))}
           </ul>
           <Search submitSearch={this.submitSearch} />
+          <div className='leaderboard-list'>
+            <h3>Leaderboard</h3>
+            {this.state.leaderboardError && (
+              <div className='error-message'>{this.state.leaderboardError}</div>
+            )}
+            {!this.state.leaderboardError && this.state.leaderboard.length === 0 && (
+              <div>No scores yet</div>
+            )}
+            <ol>
+              {this.state.leaderboard.map((entry) => (
+                <li key={entry.id}>
+                  {entry.username}: {entry.total_score}
+                </li>
+              ))}
+            </ol>
+          </div>
         </div>
         <div className='questions-list'>
           <h2>Questions</h2>
