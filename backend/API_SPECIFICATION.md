@@ -334,6 +334,7 @@ Complete REST API specification for Trivia application with 17 total endpoints a
 
 **Errors:**
 - 404: Question not found
+- 422: Cannot delete question because it has related game answer history (FK constraint violation)
 
 ---
 
@@ -530,10 +531,15 @@ Complete REST API specification for Trivia application with 17 total endpoints a
 ```
 
 **Answer Matching Logic:**
-- Answer is normalized (lowercase, special characters removed)
+- Answer is normalized via: lowercase and whitespace trimming only
 - User answer is normalized the same way
-- Substring matching: all words in correct answer must appear in user answer
-- Example: "h2o", "H2O", "water molecule h2o" all match "H2O"
+- Strict equality comparison: normalized_correct == normalized_user
+- Punctuation and special characters are NOT removed or normalized
+- Word order matters - answers must match exactly (after normalization)
+- Examples:
+  - "Water" matches: "water", "  water  ", "WATER"
+  - "Water" does NOT match: "Water." (punctuation differs), "H2O" (different text)
+  - "Sulfuric acid" does NOT match "acid sulfuric" (word order differs)
 
 **Auto-completion:**
 - When final question (question_number = total_questions) is answered:

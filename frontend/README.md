@@ -152,29 +152,49 @@ You can optionally update this game play to increase the number of questions or 
 
 ---
 
-`POST '/quizzes'`
+`POST '/games'`
 
-- Sends a post request in order to get the next question
+- Starts a game session and returns the first question
 - Request Body:
 
 ```json
 {
-    'previous_questions': [1, 4, 20, 15]
-    quiz_category': 'current category'
- }
+  "user_id": 1,
+  "category_id": 2,
+  "number_of_questions": 5
+}
 ```
 
-- Returns: a single new question object
+- Returns: game session metadata, score state, and the first question (without answer)
 
 ```json
 {
+  "game_session_id": 42,
+  "current_question_number": 1,
+  "current_score": {
+    "correct": 0,
+    "total_answered": 0,
+    "total_questions": 5
+  },
   "question": {
     "id": 1,
     "question": "This is a question",
-    "answer": "This is an answer",
     "difficulty": 5,
     "category": 4
   }
+}
+```
+
+---
+
+`POST '/games/${gameSessionId}/${questionNumber}'`
+
+- Sends an answer for the current question and returns score + next question (or completed status)
+- Request Body:
+
+```json
+{
+  "user_answer": "my answer"
 }
 ```
 
@@ -198,16 +218,10 @@ You can optionally update this game play to increase the number of questions or 
 
 ---
 
-`POST '/questions'`
+`GET '/questions?search=${term}'`
 
-- Sends a post request in order to search for a specific question by search term
-- Request Body:
-
-```json
-{
-  "searchTerm": "this is the term the user is looking for"
-}
-```
+- Fetches questions filtered by a search term
+- Request Arguments: `search` - string query parameter
 
 - Returns: any array of questions, a number of totalQuestions that met the search term and the current category string
 

@@ -93,13 +93,12 @@ class GameSessionAnswerService:
     @staticmethod
     def _compare_answers(correct_answer, user_answer):
         """
-        Normalize and compare answers.
+        Normalize and compare answers using strict equality.
         
         Normalization:
         - Convert to lowercase
-        - Remove punctuation
-        - Collapse whitespace
-        - Match exact normalized string OR all words present
+        - Trim whitespace (leading/trailing only)
+        - No punctuation stripping, no word-subset matching
         
         Args:
             correct_answer: Expected answer text
@@ -108,22 +107,14 @@ class GameSessionAnswerService:
         Returns:
             Boolean indicating correctness
         """
-        def normalize(text):
-            if not text:
-                return ""
-            text = text.lower()
-            text = re.sub(r'[^a-z0-9\s]', '', text)
-            text = ' '.join(text.split())
-            return text
+        if not correct_answer or not user_answer:
+            return False
         
-        correct_normalized = normalize(correct_answer)
-        user_normalized = normalize(user_answer)
+        # Strict lowercase + trim equality
+        normalized_correct = correct_answer.lower().strip()
+        normalized_user = user_answer.lower().strip()
         
-        # Exact match or all words present
-        return (
-            user_normalized == correct_normalized or
-            all(word in user_normalized for word in correct_normalized.split())
-        )
+        return normalized_user == normalized_correct
 
     @staticmethod
     def get_game_answers(game_session_id):

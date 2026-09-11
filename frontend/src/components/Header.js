@@ -21,21 +21,21 @@ class Header extends Component {
             this.navTo('');
           }}
         >
-          List
+          List Questions
         </h2>
         <h2
           onClick={() => {
             this.navTo('/add');
           }}
         >
-          Add
+          Add Questions
         </h2>
         <h2
           onClick={() => {
             this.navTo('/play');
           }}
         >
-          Play
+          Play A Game
         </h2>
       </div>
     );

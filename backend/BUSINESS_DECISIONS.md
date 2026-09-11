@@ -66,9 +66,9 @@ Redesigning trivia API to implement server-side answer validation, secure score 
 
 **Three-Endpoint Quiz Session Flow:**
 
-#### Step 1: Create Quiz Session (POST /quizzes)
+#### Step 1: Create Quiz Session (POST /games)
 ```
-POST /quizzes
+POST /games
 {
   "user_id": 1,
   "category_id": 2,
@@ -85,9 +85,9 @@ Response (201):
 }
 ```
 
-#### Step 2: Answer Question (POST /quizzes/42/1)
+#### Step 2: Answer Question (POST /games/42/1)
 ```
-POST /quizzes/42/1
+POST /games/42/1
 {
   "user_answer": "water"
 }
@@ -241,7 +241,7 @@ UI calculates percentage (3/5 = 60%) from this data, giving frontend flexibility
   }
   ```
 
-- `GET /leaderboard` - Top users by total_score
+- `GET /users/leaderboard` - Top users by total_score
   ```json
   {
     "leaderboard": [
@@ -328,7 +328,7 @@ UI calculates percentage (3/5 = 60%) from this data, giving frontend flexibility
    - User can catch up mid-quiz
 
 6. **View Stats:**
-   - Frontend: GET /users/<user_id> or GET /leaderboard
+  - Frontend: GET /users/<user_id> or GET /users/leaderboard
    - Display user stats + game history with audit trail
 
 ---
@@ -355,7 +355,7 @@ UI calculates percentage (3/5 = 60%) from this data, giving frontend flexibility
 - 🆕 `GET /users` - List all users
 - 🆕 `GET /users/<int:id>` - Get user details + history
 - 🆕 `POST /users` - Create user
-- 🆕 `GET /leaderboard` - Top users by score
+- 🆕 `GET /users/leaderboard` - Top users by score
 
 ### Existing (Unchanged)
 - ✅ `GET /questions/<int:id>` - Get single question
@@ -382,7 +382,7 @@ UI calculates percentage (3/5 = 60%) from this data, giving frontend flexibility
 9. POST /users - Create user
 10. GET /users - List users
 11. GET /users/<id> - Get user details
-12. GET /leaderboard - Top users
+12. GET /users/leaderboard - Top users
 
 ### Phase 3d: Question Creation
 13. POST /questions - Create new question
@@ -418,7 +418,7 @@ UI calculates percentage (3/5 = 60%) from this data, giving frontend flexibility
 - Connection recovery: GET /games/<session_id> catches up mid-game
 - After final question answered, quiz auto-completes (no additional call needed)
 - New user select/create UI before quiz start
-- New leaderboard view (GET /leaderboard)
+- New leaderboard view (GET /users/leaderboard)
 - User profile view (GET /users/<id> with game history)
 - Quiz history/replay capability (quiz_session_answer table has all answers)
 
@@ -487,3 +487,12 @@ UI calculates percentage (3/5 = 60%) from this data, giving frontend flexibility
 - No password or login required (simple for now)
 - User can create quiz under any username (not restricted)
 - No admin designation yet for category CRUD (assumed future enhancement)
+
+---
+
+## UI Assets
+
+**Question Mark SVG Icon**
+- Source: https://www.svgrepo.com/svg/104987/question-mark-button
+- Used for: Question display icon in frontend UI
+- Attribution: SVGRepo (free SVG graphics repository)

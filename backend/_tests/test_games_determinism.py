@@ -594,7 +594,7 @@ class GameSessionAnswerServiceTests(unittest.TestCase):
         self.assertTrue(complete)
 
     def test_answer_normalization_handles_punctuation(self):
-        """Answer comparison should normalize punctuation"""
+        """Answer comparison is strict - punctuation must match exactly"""
         # Question with answer "Dr. Martin Luther King Jr."
         q = QuestionRepository.create(
             'Who said "I have a dream"?',
@@ -609,7 +609,25 @@ class GameSessionAnswerServiceTests(unittest.TestCase):
         )
         db.session.commit()
         
-        # Should match even without punctuation
+        # Strict matching: punctuation must match, so this is incorrect
+        self.assertFalse(result['is_correct'])
+
+    def test_answer_case_insensitive_trim_whitespace(self):
+        """Answer comparison handles case-insensitivity and whitespace trimming"""
+        q = QuestionRepository.create(
+            'What is H2O?',
+            'Water',
+            self.cat.id,
+            3
+        )
+        db.session.commit()
+        
+        result = GameSessionAnswerService.record_answer(
+            self.game.id, 1, q, '  WATER  '
+        )
+        db.session.commit()
+        
+        # Should match with case-insensitive and trimmed whitespace
         self.assertTrue(result['is_correct'])
 
 

@@ -153,20 +153,30 @@ class GameSessionAnswerServiceCoverageTests(unittest.TestCase):
         self.assertTrue(is_correct)
 
     def test_compare_answers_with_punctuation(self):
-        """Test _compare_answers with punctuation"""
+        """Test _compare_answers with punctuation - strict matching, punctuation NOT removed"""
+        # "Water." != "water" because punctuation is preserved
         is_correct = GameSessionAnswerService._compare_answers('Water.', 'water')
-        self.assertTrue(is_correct)
+        self.assertFalse(is_correct)
 
     def test_compare_answers_with_extra_spaces(self):
-        """Test _compare_answers with extra spaces"""
+        """Test _compare_answers with extra spaces - trimmed"""
         is_correct = GameSessionAnswerService._compare_answers('Water', '  water  ')
         self.assertTrue(is_correct)
 
     def test_compare_answers_multiple_words_all_present(self):
-        """Test _compare_answers with multiple words - all present"""
+        """Test _compare_answers with multiple words - strict equality required"""
+        # "Sulfuric acid" != "acid sulfuric" because words must match exactly
         is_correct = GameSessionAnswerService._compare_answers(
             'Sulfuric acid',
             'acid sulfuric'
+        )
+        self.assertFalse(is_correct)
+
+    def test_compare_answers_multiple_words_exact(self):
+        """Test _compare_answers with multiple words - exact match"""
+        is_correct = GameSessionAnswerService._compare_answers(
+            'Sulfuric acid',
+            'sulfuric acid'
         )
         self.assertTrue(is_correct)
 

@@ -1,60 +1,74 @@
 import React, { Component } from 'react';
-import $ from 'jquery';
+import { apiGet, apiPost } from '../utils/api';
 import '../stylesheets/FormView.css';
 
 class FormView extends Component {
   constructor(props) {
-    super();
+    super(props);
     this.state = {
       question: '',
       answer: '',
       difficulty: 1,
       category: 1,
       categories: {},
+      error: '',
+      successMessage: '',
     };
+    this.successMessageTimer = null;
   }
 
   componentDidMount() {
-    $.ajax({
-      url: `/categories`, //TODO: update request URL
-      type: 'GET',
-      success: (result) => {
+    apiGet(
+      '/categories',
+      (result) => {
         this.setState({ categories: result.categories });
-        return;
       },
-      error: (error) => {
-        alert('Unable to load categories. Please try your request again');
-        return;
-      },
-    });
+      (error) => {
+        this.setState({ error: 'Unable to load categories. Please try your request again' });
+      }
+    );
+  }
+
+  componentWillUnmount() {
+    // Clean up timer to prevent state updates after unmount
+    if (this.successMessageTimer) {
+      clearTimeout(this.successMessageTimer);
+    }
   }
 
   submitQuestion = (event) => {
     event.preventDefault();
-    $.ajax({
-      url: '/questions', //TODO: update request URL
-      type: 'POST',
-      dataType: 'json',
-      contentType: 'application/json',
-      data: JSON.stringify({
+    apiPost(
+      '/questions',
+      {
         question: this.state.question,
         answer: this.state.answer,
-        difficulty: this.state.difficulty,
-        category: this.state.category,
-      }),
-      xhrFields: {
-        withCredentials: true,
+        difficulty: parseInt(this.state.difficulty),
+        category: parseInt(this.state.category),
       },
-      crossDomain: true,
-      success: (result) => {
+      (result) => {
         document.getElementById('add-question-form').reset();
-        return;
+        this.setState({
+          question: '',
+          answer: '',
+          difficulty: 1,
+          category: 1,
+          successMessage: 'Question added successfully!',
+          error: '',
+        });
+        // Clear success message after 3 seconds with proper cleanup
+        if (this.successMessageTimer) {
+          clearTimeout(this.successMessageTimer);
+        }
+        this.successMessageTimer = setTimeout(() => {
+          this.setState({ successMessage: '' });
+          this.successMessageTimer = null;
+        }, 3000);
       },
-      error: (error) => {
-        alert('Unable to add question. Please try your request again');
-        return;
-      },
-    });
+      (error) => {
+        this.setState({ error: error || 'Unable to add question. Please try your request again' });
+      }
+    );
   };
 
   handleChange = (event) => {
@@ -65,6 +79,8 @@ class FormView extends Component {
     return (
       <div id='add-form'>
         <h2>Add a New Trivia Question</h2>
+        {this.state.error && <div className='error-message'>{this.state.error}</div>}
+        {this.state.successMessage && <div className='success-message'>{this.state.successMessage}</div>}
         <form
           className='form-view'
           id='add-question-form'
@@ -72,11 +88,11 @@ class FormView extends Component {
         >
           <label>
             Question
-            <input type='text' name='question' onChange={this.handleChange} />
+            <input type='text' name='question' onChange={this.handleChange} required />
           </label>
           <label>
             Answer
-            <input type='text' name='answer' onChange={this.handleChange} />
+            <input type='text' name='answer' onChange={this.handleChange} required />
           </label>
           <label>
             Difficulty

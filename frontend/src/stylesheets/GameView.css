@@ -38,6 +38,25 @@ div.button {
     font-size: 24px;
 }
 
+.question-count-control {
+    margin-top: 14px;
+}
+
+.question-count-control label {
+    margin-right: 8px;
+    font-weight: 600;
+}
+
+.question-count-control select {
+    min-width: 72px;
+}
+
+.question-count-hint {
+    margin-top: 6px;
+    font-size: 12px;
+    color: #555;
+}
+
 .correct {
     color: green;
 }

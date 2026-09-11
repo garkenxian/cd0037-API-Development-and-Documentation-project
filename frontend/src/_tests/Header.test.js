@@ -18,9 +18,9 @@ describe('Header Component', () => {
     render(<Header />);
     const headings = screen.getAllByRole('heading', { level: 2 });
     expect(headings.length).toBe(3);
-    expect(headings[0].textContent).toBe('List');
-    expect(headings[1].textContent).toBe('Add');
-    expect(headings[2].textContent).toBe('Play');
+    expect(headings[0].textContent).toBe('List Questions');
+    expect(headings[1].textContent).toBe('Add Questions');
+    expect(headings[2].textContent).toBe('Play A Game');
   });
 
   it('has correct CSS class', () => {
