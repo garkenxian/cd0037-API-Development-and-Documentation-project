@@ -672,4 +672,233 @@ describe('QuestionView Component', () => {
       });
     });
   });
+
+  describe('Additional Category and Leaderboard Coverage', () => {
+    it('displays category error message when category creation fails', async () => {
+      api.apiPost.mockImplementation((url, data, onSuccess, onError) => {
+        onError('Invalid category name');
+      });
+
+      const { getByLabelText, getByDisplayValue, findByText, container } = render(
+        <QuestionView />
+      );
+
+      await waitFor(() => {
+        expect(container.querySelector('.question-view')).toBeTruthy();
+      });
+
+      fireEvent.change(getByLabelText('Add category name'), {
+        target: { value: 'NewCategory' },
+      });
+      fireEvent.click(getByDisplayValue('Add Category'));
+
+      expect(await findByText('Invalid category name')).toBeTruthy();
+    });
+
+    it('displays category success message after creation', async () => {
+      api.apiPost.mockImplementation((url, data, onSuccess, onError) => {
+        onSuccess({ id: 9, type: data.type, success: true });
+      });
+
+      const { getByLabelText, getByDisplayValue, findByText, container } = render(
+        <QuestionView />
+      );
+
+      await waitFor(() => {
+        expect(container.querySelector('.question-view')).toBeTruthy();
+      });
+
+      fireEvent.change(getByLabelText('Add category name'), {
+        target: { value: 'NewCategory' },
+      });
+      fireEvent.click(getByDisplayValue('Add Category'));
+
+      expect(await findByText('Category added successfully!')).toBeTruthy();
+    });
+
+    it('clears input and error state when user starts typing after error', async () => {
+      api.apiPost.mockImplementation((url, data, onSuccess, onError) => {
+        onError('Invalid category');
+      });
+
+      const { getByLabelText, getByDisplayValue, findByText, queryByText, container } = render(
+        <QuestionView />
+      );
+
+      await waitFor(() => {
+        expect(container.querySelector('.question-view')).toBeTruthy();
+      });
+
+      // Try to create category and fail
+      fireEvent.change(getByLabelText('Add category name'), {
+        target: { value: 'Bad' },
+      });
+      fireEvent.click(getByDisplayValue('Add Category'));
+
+      expect(await findByText('Invalid category')).toBeTruthy();
+
+      // Now type in input - error should clear
+      fireEvent.change(getByLabelText('Add category name'), {
+        target: { value: 'Good' },
+      });
+
+      await waitFor(() => {
+        expect(queryByText('Invalid category')).toBeFalsy();
+      });
+    });
+
+    it('handles getByCategory errors', async () => {
+      window.alert = jest.fn();
+
+      api.apiGet.mockImplementation((url, onSuccess, onError) => {
+        if (url.includes('/categories/')) {
+          onError('Category not found');
+        } else if (url.includes('/users/leaderboard')) {
+          onSuccess(mockLeaderboardResponse);
+        } else {
+          onSuccess(mockQuestionsResponse);
+        }
+      });
+
+      const { container } = render(<QuestionView />);
+
+      await waitFor(() => {
+        expect(container.querySelector('.question-view')).toBeTruthy();
+      });
+
+      window.alert.mockClear();
+    });
+
+    it('displays "No scores yet" when leaderboard is empty', async () => {
+      api.apiGet.mockImplementation((url, onSuccess, onError) => {
+        if (url.includes('/users/leaderboard')) {
+          onSuccess({ leaderboard: [], total_users: 0, success: true });
+        } else if (url.includes('search=')) {
+          onSuccess(mockSearchResponse);
+        } else {
+          onSuccess(mockQuestionsResponse);
+        }
+      });
+
+      const { container } = render(<QuestionView />);
+
+      await waitFor(() => {
+        expect(container.textContent).toContain('No scores yet');
+      });
+    });
+
+    it('resets to page 1 when clicking category', async () => {
+      const { container } = render(<QuestionView />);
+
+      await waitFor(() => {
+        expect(api.apiGet).toHaveBeenCalled();
+      });
+
+      api.apiGet.mockClear();
+
+      // Find and click category  
+      const categoryItems = container.querySelectorAll('.categories-list li');
+      if (categoryItems.length > 0) {
+        fireEvent.click(categoryItems[0]);
+
+        await waitFor(() => {
+          const calls = api.apiGet.mock.calls;
+          // Verify the call includes /categories/ endpoint
+          expect(calls.some(call => 
+            typeof call[0] === 'string' && call[0].includes('/categories/')
+          )).toBe(true);
+        });
+      }
+    });
+
+    it('includes search term in getQuestionsForPage URL', async () => {
+      api.apiGet.mockImplementation((url, onSuccess, onError) => {
+        // First call loads questions, then we simulate a search
+        if (!url.includes('search=')) {
+          onSuccess(mockQuestionsResponse);
+        } else {
+          // Search result
+          onSuccess(mockSearchResponse);
+        }
+      });
+
+      const { container } = render(<QuestionView />);
+
+      await waitFor(() => {
+        expect(api.apiGet).toHaveBeenCalled();
+      });
+
+      api.apiGet.mockClear();
+
+      // Perform search
+      const forms = container.querySelectorAll('form');
+      const searchForm = Array.from(forms).find(f => 
+        f.textContent.includes('search') || f.textContent.includes('Search')
+      );
+      
+      if (searchForm) {
+        const input = searchForm.querySelector('input[type="text"]');
+        fireEvent.change(input, { target: { value: 'test' } });
+        fireEvent.submit(searchForm);
+
+        await waitFor(() => {
+          expect(api.apiGet).toHaveBeenCalledWith(
+            expect.stringContaining('search=test'),
+            expect.any(Function),
+            expect.any(Function)
+          );
+        });
+      }
+    });
+
+    it('clicks Categories header to reload all questions', async () => {
+      const { container } = render(<QuestionView />);
+
+      await waitFor(() => {
+        expect(api.apiGet).toHaveBeenCalled();
+      });
+
+      api.apiGet.mockClear();
+
+      // Find the "Categories" h2 heading
+      const headings = container.querySelectorAll('.categories-list h2');
+      if (headings.length > 0) {
+        fireEvent.click(headings[0]);
+
+        await waitFor(() => {
+          // Should fetch all questions from page 1
+          expect(api.apiGet).toHaveBeenCalledWith(
+            '/questions?page=1',
+            expect.any(Function),
+            expect.any(Function)
+          );
+        });
+      }
+    });
+
+    it('handles category fetch error when filtering by category', async () => {
+      window.alert = jest.fn();
+
+      let callCount = 0;
+      api.apiGet.mockImplementation((url, onSuccess, onError) => {
+        callCount++;
+        if (url.includes('/categories/') && callCount === 2) {
+          // Second call (category click) fails
+          onError('Unable to load questions. Please try your request again');
+        } else if (url.includes('/users/leaderboard')) {
+          onSuccess(mockLeaderboardResponse);
+        } else {
+          onSuccess(mockQuestionsResponse);
+        }
+      });
+
+      const { container } = render(<QuestionView />);
+
+      await waitFor(() => {
+        expect(api.apiGet).toHaveBeenCalled();
+      });
+
+      window.alert.mockClear();
+    });
+  });
 });

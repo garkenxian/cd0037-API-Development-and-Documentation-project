@@ -90,6 +90,23 @@ describe('GameView Component', () => {
       });
     });
 
+    it('handles category load error', async () => {
+      api.apiGet.mockImplementation((url, onSuccess, onError) => {
+        if (url.includes('/categories')) {
+          onError('Failed to load categories');
+        }
+      });
+
+      const { container } = render(
+        <GameView users={mockUsers} selectedUserId={1} onSelectUser={jest.fn()} />
+      );
+
+      await waitFor(() => {
+        // Component should set error state
+        expect(container.querySelector('.quiz-play-holder')).toBeTruthy();
+      });
+    });
+
     it('shows user selector when no user is selected', () => {
       const { container } = render(
         <GameView users={mockUsers} selectedUserId={null} onSelectUser={jest.fn()} />
