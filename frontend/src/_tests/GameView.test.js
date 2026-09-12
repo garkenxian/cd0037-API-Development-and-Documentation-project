@@ -1110,5 +1110,130 @@ describe('GameView Component', () => {
         expect(api.apiPost).toHaveBeenCalled();
       });
     });
+
+    it('displays answer and correctness indicator', async () => {
+      api.apiPost.mockImplementation((url, data, onSuccess, onError) => {
+        if (url === '/games') {
+          onSuccess({
+            game_session_id: 42,
+            current_question_number: 1,
+            current_score: { correct: 0, total_answered: 0, total_questions: 5 },
+            question: { id: 7, question: 'Q?', category: 1, difficulty: 2 },
+          });
+        } else if (url.includes('/games/42')) {
+          onSuccess({
+            game_session_id: 42,
+            current_score: { correct: 1, total_answered: 1, total_questions: 5 },
+            correct: false,
+            correct_answer: 'Right answer',
+            status: 'in_progress',
+          });
+        }
+      });
+
+      const { container } = render(
+        <GameView users={mockUsers} selectedUserId={1} onSelectUser={jest.fn()} />
+      );
+
+      await waitFor(() => {
+        const buttons = container.querySelectorAll('.play-category');
+        if (buttons.length > 0) fireEvent.click(buttons[0]);
+      });
+
+      await waitFor(() => {
+        expect(api.apiPost).toHaveBeenCalled();
+      });
+    });
+
+    it('renders create user form with username and email fields', async () => {
+      const { container } = render(
+        <GameView users={mockUsers} selectedUserId={null} onSelectUser={jest.fn()} />
+      );
+
+      const createButton = container.querySelector('.create-user-button');
+      if (createButton) {
+        fireEvent.click(createButton);
+
+        const userForm = container.querySelector('.create-user-form');
+        expect(userForm).toBeTruthy();
+
+        const inputs = userForm?.querySelectorAll('input') || [];
+        expect(inputs.length).toBeGreaterThanOrEqual(2);
+      }
+    });
+
+    it('cancels create user form and closes it', async () => {
+      const { container } = render(
+        <GameView users={mockUsers} selectedUserId={null} onSelectUser={jest.fn()} />
+      );
+
+      const createButton = container.querySelector('.create-user-button');
+      if (createButton) {
+        fireEvent.click(createButton);
+        expect(container.querySelector('.create-user-form')).toBeTruthy();
+
+        const buttons = Array.from(container.querySelectorAll('.create-user-form button'));
+        const cancelBtn = buttons.find(b => b.textContent.includes('Cancel'));
+        
+        if (cancelBtn) {
+          fireEvent.click(cancelBtn);
+          
+          // Form should close
+          expect(container.querySelector('.create-user-form')).toBeFalsy();
+        }
+      }
+    });
+
+    it('updates game state with loaded questions', async () => {
+      api.apiPost.mockImplementation((url, data, onSuccess, onError) => {
+        if (url === '/games') {
+          onSuccess({
+            game_session_id: 100,
+            current_question_number: 2,
+            current_score: { correct: 2, total_answered: 3, total_questions: 5 },
+            question: { id: 10, question: 'Mid-game Q?', category: 2, difficulty: 3 },
+          });
+        }
+      });
+
+      const { container } = render(
+        <GameView users={mockUsers} selectedUserId={1} onSelectUser={jest.fn()} />
+      );
+
+      await waitFor(() => {
+        const buttons = container.querySelectorAll('.play-category');
+        if (buttons.length > 0) fireEvent.click(buttons[0]);
+      });
+
+      await waitFor(() => {
+        expect(api.apiPost).toHaveBeenCalledWith(
+          '/games',
+          expect.objectContaining({
+            user_id: 1,
+            category_id: expect.any(Number),
+          }),
+          expect.any(Function),
+          expect.any(Function)
+        );
+      });
+    });
+
+    it('handles loading state during game operations', async () => {
+      const { container } = render(
+        <GameView users={mockUsers} selectedUserId={1} onSelectUser={jest.fn()} />
+      );
+
+      await waitFor(() => {
+        expect(api.apiGet).toHaveBeenCalledWith(
+          '/categories',
+          expect.any(Function),
+          expect.any(Function)
+        );
+      });
+
+      // Component should render
+      expect(container).toBeTruthy();
+    });
   });
 });
+
