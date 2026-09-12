@@ -1,5 +1,5 @@
 import React from 'react';
-import { render } from '@testing-library/react';
+import { render, fireEvent } from '@testing-library/react';
 import Search from '../components/Search';
 
 describe('Search Component', () => {
@@ -37,5 +37,46 @@ describe('Search Component', () => {
     const { container } = render(<Search submitSearch={mockSubmitSearch} />);
     const submitButton = container.querySelector('.button');
     expect(submitButton).toBeTruthy();
+  });
+
+  describe('Form Submission', () => {
+    it('calls submitSearch when form is submitted', () => {
+      const { container } = render(<Search submitSearch={mockSubmitSearch} />);
+      const form = container.querySelector('form');
+      fireEvent.submit(form);
+      expect(mockSubmitSearch).toHaveBeenCalled();
+    });
+
+    it('submits empty query on initial submit', () => {
+      const { container } = render(<Search submitSearch={mockSubmitSearch} />);
+      const form = container.querySelector('form');
+      fireEvent.submit(form);
+      expect(mockSubmitSearch).toHaveBeenCalledWith('');
+    });
+
+    it('updates query state on input change', () => {
+      const { container } = render(<Search submitSearch={mockSubmitSearch} />);
+      const input = container.querySelector('input:not([type="submit"])');
+      fireEvent.change(input, { target: { value: 'science' } });
+      expect(input.value).toBe('science');
+    });
+
+    it('submits entered query when form is submitted', () => {
+      const { container } = render(<Search submitSearch={mockSubmitSearch} />);
+      const input = container.querySelector('input:not([type="submit"])');
+      fireEvent.change(input, { target: { value: 'biology' } });
+      const form = container.querySelector('form');
+      fireEvent.submit(form);
+      expect(mockSubmitSearch).toHaveBeenCalledWith('biology');
+    });
+
+    it('prevents default form submission', () => {
+      const { container } = render(<Search submitSearch={mockSubmitSearch} />);
+      const form = container.querySelector('form');
+      const event = new Event('submit', { bubbles: true });
+      const preventDefaultSpy = jest.spyOn(event, 'preventDefault');
+      form.dispatchEvent(event);
+      expect(preventDefaultSpy).toHaveBeenCalled();
+    });
   });
 });
