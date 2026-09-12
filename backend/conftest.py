@@ -30,3 +30,25 @@ def pytest_configure(config):
         message='.*datetime.utcnow.*is deprecated.*',
         category=DeprecationWarning
     )
+
+
+@pytest.fixture(autouse=True)
+def reset_rate_limiter():
+    """Reset the global rate limiter before each test to prevent cross-test interference"""
+    try:
+        from utils import get_rate_limiter
+        limiter = get_rate_limiter()
+        limiter.reset()
+    except (ImportError, AttributeError):
+        # If import fails, just skip - not all test environments will have this
+        pass
+    
+    yield
+    
+    # Reset again after test to ensure clean state
+    try:
+        from utils import get_rate_limiter
+        limiter = get_rate_limiter()
+        limiter.reset()
+    except (ImportError, AttributeError):
+        pass

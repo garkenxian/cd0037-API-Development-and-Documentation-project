@@ -5,6 +5,7 @@ from werkzeug.exceptions import BadRequest
 from services import QuestionService, CategoryService, UserService, GameSessionService, GameSessionAnswerService
 from data_access import db, GameSessionAnswerRepository, GameSessionRepository
 from models import GameSession, Question
+from utils import rate_limit
 
 games_bp = Blueprint('games', __name__, url_prefix='')
 
@@ -135,6 +136,7 @@ def create_game():
 
 
 @games_bp.route('/games/<int:game_session_id>/<int:question_number>', methods=['POST'])
+@rate_limit(limit=30, window_seconds=60)
 def answer_question(game_session_id, question_number):
     """
     Answer a game question and get the next question
