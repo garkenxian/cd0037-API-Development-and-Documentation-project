@@ -47,3 +47,64 @@ Pay special attention to what data the frontend is expecting from each API respo
 By making notes ahead of time, you will practice the core skill of being able to read and understand code and will have a simple plan to follow to build out the endpoints of your backend API.
 
 > View the [Frontend README](./frontend/README.md) for more details.
+
+## Security Implementation (Phase 6)
+
+This project includes security hardening measures to protect against common API vulnerabilities:
+
+### CORS Configuration
+- **Development**: CORS allows all origins (`*`) for local development
+- **Production**: CORS restricted to configured origins via `CORS_ALLOWED_ORIGINS` environment variable
+- **Default Production**: `http://localhost:3000`
+- **Configuration**: Set `FLASK_ENV=production` and `CORS_ALLOWED_ORIGINS=https://yourdomain.com` in production
+
+### Rate Limiting
+- Answer submission endpoint (`POST /games/<id>/<question_number>`) rate limited to **30 requests per 60 seconds per IP**
+- Returns `429 Too Many Requests` when limit exceeded
+- Prevents abuse and brute-force attempts on game endpoints
+- Implemented via lightweight in-memory rate limiter (`utils/rate_limit.py`)
+
+### Input Validation
+All user input is validated and normalized:
+- **Usernames**: 3-50 characters, trimmed, case-sensitive
+- **Emails**: Trimmed, converted to lowercase for consistency
+- **Questions/Answers**: 1-500 characters, trimmed
+- **Categories**: 1-100 characters, trimmed
+- **Difficulty**: Integer range 1-5
+- **Rating**: Float range 0.0-5.0
+- **Game size**: 1-20 questions per game session
+
+Database-level CHECK constraints enforce validation rules as authoritative source of truth.
+
+### Answer Security
+- Answers are **never leaked** before user submission
+- Questions returned in `/games` and `/games/<id>` endpoints contain no answer field
+- Correct answer revealed only after `POST /games/<id>/<question_number>` submission
+- Audit trail (`game_session_answers` table) records all answers with immutable snapshots
+
+### Dependency Security
+- Backend: All Python dependencies pinned to specific tested versions (no `>=` ranges)
+- Frontend: jQuery updated to 3.7.0+ to address XSS vulnerabilities (CVE-2020-11022, CVE-2020-11023)
+- Regular audits via `pip audit` (backend) and `npm audit` (frontend)
+- Run audits before deployment: 
+  ```bash
+  # Backend
+  cd backend && pip audit
+  # Frontend
+  cd frontend && npm audit
+  ```
+
+### Testing
+Security-focused tests validate all hardening measures:
+```bash
+cd backend
+python -m pytest _tests/test_security_phase6.py -v
+```
+
+Tests cover:
+- CORS configuration by environment
+- Rate limiting per-IP and per-resource
+- Input validation and normalization
+- Answer leakage prevention
+- Rate limit headers and retry-after calculations
+

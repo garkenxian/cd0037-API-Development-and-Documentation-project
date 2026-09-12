@@ -3,11 +3,56 @@ Flask Application Factory and Setup
 Implements application initialization with blueprint-based routing
 """
 
+import os
 from flask import Flask, jsonify
 from flask_cors import CORS
 
 from data_access import setup_db, db
 from controllers import users_bp, categories_bp, questions_bp, games_bp
+
+
+def _get_cors_origins(test_config=None):
+    """
+    Determine appropriate CORS origins based on environment.
+    
+    - Development: '*' (allow all)
+    - Testing: '*' (allow all for test client)
+    - Production: restrictive list only
+    
+    Args:
+        test_config: Optional test config dict. If provided (even if empty),
+                    returns '*' wildcard regardless of TESTING flag or FLASK_ENV.
+                    This is intentional for compatibility with pytest's test_client,
+                    which cannot set origin headers in standard use.
+                    
+                    WARNING: Do not pass test_config=True or test_config={} 
+                    in production or custom launch scripts unless you explicitly
+                    want CORS to allow all origins. For true production mode with
+                    restricted CORS, omit test_config and rely on FLASK_ENV
+                    environment detection instead.
+        
+    Returns:
+        str or list of allowed origins
+    """
+    # Test environment uses wildcard for compatibility
+    # This allows pytest test_client to make requests without origin headers
+    if test_config is not None:
+        return '*'
+    
+    # Check FLASK_ENV environment variable
+    flask_env = os.getenv('FLASK_ENV', 'development').lower()
+    
+    # Development and test environments allow all origins
+    if flask_env in ('development', 'test'):
+        return '*'
+    
+    # Production: only allow specific origins (via env config or default to localhost only)
+    # Can be set via CORS_ALLOWED_ORIGINS env var (comma-separated)
+    prod_origins = os.getenv('CORS_ALLOWED_ORIGINS', 'http://localhost:3000')
+    if isinstance(prod_origins, str):
+        return [o.strip() for o in prod_origins.split(',') if o.strip()]
+    
+    return prod_origins
 
 
 def create_app(test_config=None):
@@ -30,8 +75,10 @@ def create_app(test_config=None):
         database_path = test_config.get('SQLALCHEMY_DATABASE_URI')
         setup_db(app, database_path=database_path)
 
-    # Setup CORS with configurable origins (default to all for dev, restrict for production)
-    cors_origins = app.config.get('CORS_ORIGINS', '*')
+    # Setup CORS with environment-aware origins
+    # Development: wildcard ('*')
+    # Production: restricted to CORS_ALLOWED_ORIGINS env var (default: http://localhost:3000)
+    cors_origins = _get_cors_origins(test_config)
     CORS(app, resources={r"/*": {"origins": cors_origins}})
     
     # Database tables are created in setup_db()
