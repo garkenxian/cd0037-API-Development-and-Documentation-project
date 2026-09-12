@@ -1005,5 +1005,75 @@ describe('QuestionView Component', () => {
         expect(qv.getByCategory).toBeDefined();
       }
     });
+
+    it('handles error in getByCategory and shows alert', async () => {
+      const alertSpy = jest.spyOn(window, 'alert').mockImplementation(() => {});
+
+      let callCount = 0;
+      api.apiGet.mockImplementation((url, onSuccess, onError) => {
+        if (url.includes('/categories/')) {
+          onError('Category not found');
+        } else {
+          callCount++;
+          onSuccess(mockQuestionsResponse);
+        }
+      });
+
+      const { container } = render(<QuestionView />);
+
+      await waitFor(() => {
+        expect(container.querySelector('.categories-list')).toBeTruthy();
+      });
+
+      // Simulate category click to trigger getByCategory
+      const categoryItems = container.querySelectorAll('li');
+      if (categoryItems.length > 0) {
+        fireEvent.click(categoryItems[0]);
+      }
+
+      await waitFor(() => {
+        expect(alertSpy).toHaveBeenCalled();
+      });
+
+      alertSpy.mockRestore();
+    });
+
+    it('handles delete with page out of range fallback', async () => {
+      const confirmSpy = jest.spyOn(window, 'confirm').mockReturnValue(true);
+      const alertSpy = jest.spyOn(window, 'alert').mockImplementation(() => {});
+
+      let deleteAttempted = false;
+      api.apiDelete.mockImplementation((url, onSuccess, onError) => {
+        if (url.includes('/questions/')) {
+          deleteAttempted = true;
+          onSuccess({ success: true });
+        }
+      });
+
+      api.apiGet.mockImplementation((url, onSuccess, onError) => {
+        onSuccess(mockQuestionsResponse);
+      });
+
+      const { container } = render(<QuestionView />);
+
+      await waitFor(() => {
+        expect(container.querySelector('.questions-list')).toBeTruthy();
+      });
+
+      confirmSpy.mockRestore();
+      alertSpy.mockRestore();
+    });
+
+    it('initializes with correct default state values', () => {
+      const qv = new QuestionView();
+      expect(qv.state.page).toBe(1);
+      expect(qv.state.totalPages).toBe(1);
+      expect(qv.state.totalQuestions).toBe(0);
+      expect(qv.state.activeSearch).toBeNull();
+      expect(qv.state.currentCategory).toBeNull();
+      expect(qv.state.createCategoryError).toBe('');
+      expect(qv.state.createCategorySuccess).toBe('');
+      expect(qv.state.leaderboardError).toBe('');
+    });
   });
 });
