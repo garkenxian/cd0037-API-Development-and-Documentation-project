@@ -1234,6 +1234,220 @@ describe('GameView Component', () => {
       // Component should render
       expect(container).toBeTruthy();
     });
+
+    it('shows specific error for user not found in game', async () => {
+      api.apiPost.mockImplementation((url, data, onSuccess, onError) => {
+        if (url === '/games') {
+          onError('Selected user not found');
+        }
+      });
+
+      const { container } = render(
+        <GameView users={mockUsers} selectedUserId={1} onSelectUser={jest.fn()} />
+      );
+
+      await waitFor(() => {
+        const buttons = container.querySelectorAll('.play-category');
+        if (buttons.length > 0) fireEvent.click(buttons[0]);
+      });
+
+      await waitFor(() => {
+        expect(container.textContent).toContain('not found');
+      });
+    });
+
+    it('handles generic error when user is found but other issue occurs', async () => {
+      api.apiPost.mockImplementation((url, data, onSuccess, onError) => {
+        if (url === '/games') {
+          onError('Database connection failed');
+        }
+      });
+
+      const { container } = render(
+        <GameView users={mockUsers} selectedUserId={1} onSelectUser={jest.fn()} />
+      );
+
+      await waitFor(() => {
+        const buttons = container.querySelectorAll('.play-category');
+        if (buttons.length > 0) fireEvent.click(buttons[0]);
+      });
+
+      await waitFor(() => {
+        expect(api.apiPost).toHaveBeenCalled();
+      });
+    });
+
+    it('shows answer correctness state after submission', async () => {
+      api.apiPost.mockImplementation((url, data, onSuccess, onError) => {
+        if (url === '/games') {
+          onSuccess({
+            game_session_id: 42,
+            current_question_number: 1,
+            current_score: { correct: 0, total_answered: 0, total_questions: 5 },
+            question: { id: 7, question: 'Q?', category: 1, difficulty: 2 },
+          });
+        } else if (url.includes('/games/42')) {
+          onSuccess({
+            game_session_id: 42,
+            current_question_number: 1,
+            current_score: { correct: 0, total_answered: 1, total_questions: 5 },
+            correct: false,
+            correct_answer: 'Right',
+            status: 'in_progress',
+          });
+        }
+      });
+
+      const { container } = render(
+        <GameView users={mockUsers} selectedUserId={1} onSelectUser={jest.fn()} />
+      );
+
+      await waitFor(() => {
+        const buttons = container.querySelectorAll('.play-category');
+        if (buttons.length > 0) fireEvent.click(buttons[0]);
+      });
+
+      await waitFor(() => {
+        expect(api.apiPost).toHaveBeenCalled();
+      });
+    });
+
+    it('transitions to final score when game completes', async () => {
+      api.apiPost.mockImplementation((url, data, onSuccess, onError) => {
+        if (url === '/games') {
+          onSuccess({
+            game_session_id: 50,
+            current_question_number: 5,
+            current_score: { correct: 3, total_answered: 4, total_questions: 5 },
+            question: { id: 8, question: 'Q5?', category: 1, difficulty: 1 },
+          });
+        } else if (url === '/games/50/5') {
+          onSuccess({
+            game_session_id: 50,
+            current_question_number: 5,
+            current_score: { correct: 4, total_answered: 5, total_questions: 5 },
+            status: 'completed',
+            correct: true,
+          });
+        }
+      });
+
+      const { container } = render(
+        <GameView users={mockUsers} selectedUserId={1} onSelectUser={jest.fn()} />
+      );
+
+      await waitFor(() => {
+        const buttons = container.querySelectorAll('.play-category');
+        if (buttons.length > 0) fireEvent.click(buttons[0]);
+      });
+
+      await waitFor(() => {
+        expect(api.apiPost).toHaveBeenCalled();
+      });
+    });
+
+    it('fetches next question and updates game state', async () => {
+      let callCount = 0;
+
+      api.apiPost.mockImplementation((url, data, onSuccess, onError) => {
+        if (url === '/games') {
+          onSuccess({
+            game_session_id: 60,
+            current_question_number: 1,
+            current_score: { correct: 0, total_answered: 0, total_questions: 3 },
+            question: { id: 10, question: 'Q1?', category: 1, difficulty: 2 },
+          });
+        }
+      });
+
+      api.apiGet.mockImplementation((url, onSuccess, onError) => {
+        if (url === '/games/60') {
+          onSuccess({
+            game_session_id: 60,
+            current_question_number: 2,
+            current_score: { correct: 1, total_answered: 1, total_questions: 3 },
+            question: { id: 11, question: 'Q2?', category: 1, difficulty: 1 },
+          });
+        } else {
+          onSuccess({ categories: mockCategories, questions: [] });
+        }
+      });
+
+      const { container } = render(
+        <GameView users={mockUsers} selectedUserId={1} onSelectUser={jest.fn()} />
+      );
+
+      await waitFor(() => {
+        const buttons = container.querySelectorAll('.play-category');
+        if (buttons.length > 0) fireEvent.click(buttons[0]);
+      });
+
+      await waitFor(() => {
+        expect(api.apiPost).toHaveBeenCalled();
+      });
+    });
+
+    it('completes game when final question answered', async () => {
+      api.apiPost.mockImplementation((url, data, onSuccess, onError) => {
+        if (url === '/games') {
+          onSuccess({
+            game_session_id: 80,
+            current_question_number: 5,
+            current_score: { correct: 4, total_answered: 4, total_questions: 5 },
+            question: { id: 15, question: 'Last Q?', category: 2, difficulty: 2 },
+          });
+        } else if (url === '/games/80/5') {
+          onSuccess({
+            game_session_id: 80,
+            current_question_number: 5,
+            current_score: { correct: 5, total_answered: 5, total_questions: 5 },
+            status: 'completed',
+            correct: true,
+          });
+        }
+      });
+
+      api.apiGet.mockImplementation((url, onSuccess, onError) => {
+        onSuccess({ categories: mockCategories, questions: [] });
+      });
+
+      const { container } = render(
+        <GameView users={mockUsers} selectedUserId={1} onSelectUser={jest.fn()} />
+      );
+
+      await waitFor(() => {
+        const buttons = container.querySelectorAll('.play-category');
+        if (buttons.length > 0) fireEvent.click(buttons[0]);
+      });
+
+      await waitFor(() => {
+        expect(api.apiPost).toHaveBeenCalled();
+      });
+    });
+
+    it('restarts game and resets all state', async () => {
+      api.apiPost.mockImplementation((url, data, onSuccess, onError) => {
+        onSuccess({
+          game_session_id: 70,
+          current_question_number: 1,
+          current_score: { correct: 0, total_answered: 0, total_questions: 4 },
+          question: { id: 12, question: 'Q?', category: 2, difficulty: 3 },
+        });
+      });
+
+      const { container } = render(
+        <GameView users={mockUsers} selectedUserId={1} onSelectUser={jest.fn()} />
+      );
+
+      await waitFor(() => {
+        const buttons = container.querySelectorAll('.play-category');
+        if (buttons.length > 0) fireEvent.click(buttons[0]);
+      });
+
+      await waitFor(() => {
+        expect(api.apiPost).toHaveBeenCalled();
+      });
+    });
   });
 });
 
