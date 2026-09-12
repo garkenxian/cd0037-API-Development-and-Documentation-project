@@ -1425,14 +1425,88 @@ describe('GameView Component', () => {
       });
     });
 
-    it('restarts game and resets all state', async () => {
+    it('submits answer and handles correct response', async () => {
       api.apiPost.mockImplementation((url, data, onSuccess, onError) => {
-        onSuccess({
-          game_session_id: 70,
-          current_question_number: 1,
-          current_score: { correct: 0, total_answered: 0, total_questions: 4 },
-          question: { id: 12, question: 'Q?', category: 2, difficulty: 3 },
-        });
+        if (url === '/games') {
+          onSuccess({
+            game_session_id: 100,
+            current_question_number: 1,
+            current_score: { correct: 0, total_answered: 0, total_questions: 3 },
+            question: { id: 20, question: 'What is 2+2?', category: 1, difficulty: 1 },
+          });
+        } else if (url === '/games/100/1') {
+          // Answer submission response
+          onSuccess({
+            game_session_id: 100,
+            current_question_number: 1,
+            current_score: { correct: 1, total_answered: 1, total_questions: 3 },
+            status: 'in_progress',
+            correct: true,
+            correct_answer: '4',
+          });
+        }
+      });
+
+      api.apiGet.mockImplementation((url, onSuccess, onError) => {
+        onSuccess({ categories: mockCategories, questions: [] });
+      });
+
+      const { container } = render(
+        <GameView users={mockUsers} selectedUserId={1} onSelectUser={jest.fn()} />
+      );
+
+      // Click category to start game
+      await waitFor(() => {
+        const buttons = container.querySelectorAll('.play-category');
+        if (buttons.length > 0) fireEvent.click(buttons[0]);
+      });
+
+      // Wait for question to appear
+      await waitFor(() => {
+        const form = container.querySelector('form');
+        expect(form).toBeTruthy();
+      });
+
+      // Submit answer
+      const form = container.querySelector('form');
+      const input = form.querySelector('input[name="guess"]');
+      fireEvent.change(input, { target: { value: '4' } });
+      fireEvent.submit(form);
+
+      // Verify answer was submitted
+      await waitFor(() => {
+        expect(api.apiPost).toHaveBeenCalledWith(
+          '/games/100/1',
+          expect.objectContaining({ user_answer: '4' }),
+          expect.any(Function),
+          expect.any(Function)
+        );
+      });
+    });
+
+    it('submits answer and handles incorrect response', async () => {
+      api.apiPost.mockImplementation((url, data, onSuccess, onError) => {
+        if (url === '/games') {
+          onSuccess({
+            game_session_id: 110,
+            current_question_number: 1,
+            current_score: { correct: 0, total_answered: 0, total_questions: 3 },
+            question: { id: 21, question: 'What is 1+1?', category: 1, difficulty: 1 },
+          });
+        } else if (url === '/games/110/1') {
+          onSuccess({
+            game_session_id: 110,
+            current_question_number: 1,
+            current_score: { correct: 0, total_answered: 1, total_questions: 3 },
+            status: 'in_progress',
+            correct: false,
+            correct_answer: '2',
+          });
+        }
+      });
+
+      api.apiGet.mockImplementation((url, onSuccess, onError) => {
+        onSuccess({ categories: mockCategories, questions: [] });
       });
 
       const { container } = render(
@@ -1445,7 +1519,22 @@ describe('GameView Component', () => {
       });
 
       await waitFor(() => {
-        expect(api.apiPost).toHaveBeenCalled();
+        const form = container.querySelector('form');
+        expect(form).toBeTruthy();
+      });
+
+      const form = container.querySelector('form');
+      const input = form.querySelector('input[name="guess"]');
+      fireEvent.change(input, { target: { value: '3' } });
+      fireEvent.submit(form);
+
+      await waitFor(() => {
+        expect(api.apiPost).toHaveBeenCalledWith(
+          '/games/110/1',
+          expect.any(Object),
+          expect.any(Function),
+          expect.any(Function)
+        );
       });
     });
   });
