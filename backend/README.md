@@ -158,15 +158,15 @@ models/          ← ORM models
 
 The project uses **pytest** with comprehensive test coverage (94%+).
 
-### Reviewer Quick Command
+### Reviewer Quick Test Run
 
-From the `backend` directory:
+Use this exact flow from the `backend` directory:
 
 ```bash
 make test
 ```
 
-If `make` is not available on your machine, use:
+If your environment does not have `make`, run this equivalent command:
 
 ```bash
 ./run_tests.ps1   # Windows PowerShell

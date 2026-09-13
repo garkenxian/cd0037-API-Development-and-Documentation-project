@@ -23,18 +23,20 @@ Completing this trivia app will give you the ability to structure plan, implemen
 Use this exact flow from the repository root:
 
 ```bash
-# 1) Backend + frontend automated test run
+# Run backend + frontend automated tests
 make test
 ```
 
-If your environment does not have `make`, run the equivalent commands:
+If your environment does not have `make`, run this equivalent sequence:
 
 ```bash
+# Backend tests
 cd backend
 ./run_tests.ps1   # Windows PowerShell
 # or
 ./run_tests.cmd   # Windows CMD
 
+# Frontend tests
 cd ../frontend
 npm install
 npm run test:ci
