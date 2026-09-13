@@ -5,7 +5,7 @@
 ### Install Dependencies
 
 1. **Python 3.10+** - Follow instructions to install Python for your platform in the [python docs](https://docs.python.org/3/using/unix.html#getting-and-installing-the-latest-version-of-python)
-   - Note: The project is tested with Python 3.10 to match CI/CD configuration. See [PYTHON_VERSION.md](PYTHON_VERSION.md) for detailed setup instructions.
+   - Note: The project is tested with Python 3.10 to match CI/CD configuration. See [PYTHON_VERSION.md](../PYTHON_VERSION.md) for detailed setup instructions.
 
 2. **Virtual Environment** - We recommend working within a virtual environment whenever using Python for projects. This keeps your dependencies for each project separate and organized. Instructions for setting up a virtual environment for your platform can be found in the [python docs](https://packaging.python.org/guides/installing-using-pip-and-virtual-environments/)
 
@@ -91,7 +91,7 @@ The database includes the following tables:
 - **questions**: Trivia questions with answers, categories, and difficulty levels
 - **game_sessions**: Records of played games with user, score, and category
 
-See [API_SPECIFICATION.md](API_SPECIFICATION.md) for detailed schema documentation.
+See [API_SPECIFICATION.md](docs/API_SPECIFICATION.md) for detailed schema documentation.
 
 ### Run the Server
 
@@ -113,7 +113,7 @@ The development server runs on `http://localhost:5000` by default.
 
 ## API Endpoints
 
-The API is organized using Flask blueprints for modular, maintainable code. See [API_SPECIFICATION.md](API_SPECIFICATION.md) for complete endpoint documentation.
+The API is organized using Flask blueprints for modular, maintainable code. See [API_SPECIFICATION.md](docs/API_SPECIFICATION.md) for complete endpoint documentation.
 
 ### Available Endpoints
 
@@ -220,7 +220,7 @@ xdg-open htmlcov/index.html  # Linux
 
 **Per-File Minimum**: Every **source file** must achieve ≥80% line coverage.
 
-**Coverage Scope**: Only files in `controllers/`, `services/`, `models/`, `data_access/`, and `flaskr/` are included in the per-file gate. Utility scripts and helpers (e.g., `coverage_report.py`, `db_init.py`) are excluded via `.coveragerc`.
+**Coverage Scope**: Only files in `controllers/`, `services/`, `models/`, `data_access/`, and `flaskr/` are included in the per-file gate. Utility scripts and helpers (e.g., `tools/coverage/coverage_report.py`, `db_init.py`) are excluded via `.coveragerc`.
 
 Current coverage status (all source files ✅):
 - Controllers: 84-95% (questions.py, games.py, categories.py, users.py)
@@ -336,8 +336,8 @@ pip install -r requirements.txt
 
 ## Documentation Files
 
-- [API_SPECIFICATION.md](API_SPECIFICATION.md) - Complete API specification with request/response formats
-- [TESTING.md](TESTING.md) - Detailed testing documentation
-- [BUSINESS_DECISIONS.md](BUSINESS_DECISIONS.md) - Architecture and design decisions
-- [PYTHON_VERSION.md](PYTHON_VERSION.md) - Python version setup and compatibility
-- [../PROJECT_PLAN.md](../PROJECT_PLAN.md) - Project overview and status
+- [docs/API_SPECIFICATION.md](docs/API_SPECIFICATION.md) - Complete API specification with request/response formats
+- [docs/TESTING.md](docs/TESTING.md) - Detailed testing documentation
+- [docs/BUSINESS_DECISIONS.md](docs/BUSINESS_DECISIONS.md) - Architecture and design decisions
+- [docs/DATABASE_SEED.md](docs/DATABASE_SEED.md) - Seed data setup and reference
+- [PYTHON_VERSION.md](../PYTHON_VERSION.md) - Python version setup and compatibility

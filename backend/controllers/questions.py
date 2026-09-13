@@ -6,6 +6,9 @@ from services import QuestionService, CategoryService
 
 questions_bp = Blueprint('questions', __name__, url_prefix='/questions')
 
+# API contract: questions listing returns 10 items per page.
+QUESTIONS_PER_PAGE = 10
+
 
 def _is_constraint_violation(error_text):
     """Return True when an error message indicates DB/domain constraint violation."""
@@ -63,10 +66,17 @@ def get_questions():
         
         if search:
             # Search questions
-            questions_page = QuestionService.search_questions(search, page=page)
+            questions_page = QuestionService.search_questions(
+                search,
+                page=page,
+                per_page=QUESTIONS_PER_PAGE
+            )
         else:
             # Get all questions
-            questions_page = QuestionService.get_all_questions(page=page)
+            questions_page = QuestionService.get_all_questions(
+                page=page,
+                per_page=QUESTIONS_PER_PAGE
+            )
         
         if page > questions_page.pages and questions_page.total > 0:
             abort(404, description=f"Page {page} out of range. Total pages: {questions_page.pages}")

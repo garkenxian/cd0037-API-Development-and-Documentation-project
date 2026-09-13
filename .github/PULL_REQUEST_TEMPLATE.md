@@ -28,5 +28,5 @@
 
 ## Manual Checks
 
-- [ ] Endpoint examples in backend/API_SPECIFICATION.md match observed API responses for changed routes.
+- [ ] Endpoint examples in backend/docs/API_SPECIFICATION.md match observed API responses for changed routes.
 - [ ] Frontend API calls match current backend contract for changed flows.

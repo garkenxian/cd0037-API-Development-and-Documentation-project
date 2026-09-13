@@ -41,7 +41,7 @@ jobs:
     - name: Enforce backend per-file coverage >= 80%
       working-directory: ./backend
       run: |
-        python coverage_report.py
+        python tools/coverage/coverage_report.py
     
     - name: Upload coverage to Codecov
       uses: codecov/codecov-action@v3
