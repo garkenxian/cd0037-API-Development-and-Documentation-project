@@ -48,6 +48,46 @@ By making notes ahead of time, you will practice the core skill of being able to
 
 > View the [Frontend README](./frontend/README.md) for more details.
 
+## API Endpoints Summary
+
+The application provides a complete RESTful API with 17 endpoints across 5 resource categories. Detailed specification available in [API_SPECIFICATION.md](./backend/docs/API_SPECIFICATION.md).
+
+### Categories (6 endpoints)
+| Method | URL | Description |
+|--------|-----|-------------|
+| GET | `/categories` | List all categories |
+| GET | `/categories/<int:id>` | Get single category |
+| POST | `/categories` | Create new category |
+| PUT | `/categories/<int:id>` | Update category |
+| GET | `/categories/<int:id>/questions` | Get all questions in a category |
+| DELETE | `/categories/<int:id>` | Delete category |
+
+### Questions (4 endpoints)
+| Method | URL | Description |
+|--------|-----|-------------|
+| GET | `/questions?page=1&search=query` | List paginated questions with optional search |
+| GET | `/questions/<int:id>` | Get single question |
+| POST | `/questions` | Create new question |
+| DELETE | `/questions/<int:id>` | Delete question |
+
+### Games (3 endpoints)
+| Method | URL | Description |
+|--------|-----|-------------|
+| POST | `/games` | Create new game session with first question |
+| GET | `/games/<int:id>` | Get game state and next question |
+| POST | `/games/<int:id>/<int:question_number>` | Submit answer to question |
+
+### Users (4 endpoints)
+| Method | URL | Description |
+|--------|-----|-------------|
+| GET | `/users` | List all users with statistics |
+| GET | `/users/<int:id>` | Get user profile and game history |
+| POST | `/users` | Create new user |
+| GET | `/users/leaderboard` | Get top users ranked by score |
+
+### Response Format
+All endpoints return JSON with a success indicator. Response payload structure varies by endpoint—see [API_SPECIFICATION.md](./backend/docs/API_SPECIFICATION.md) for detailed schemas, parameters, request/response examples, and error codes.
+
 ## Security Implementation (Phase 6)
 
 This project includes security hardening measures to protect against common API vulnerabilities:

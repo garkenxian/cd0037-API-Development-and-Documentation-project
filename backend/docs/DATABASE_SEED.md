@@ -212,13 +212,12 @@ GAME_SESSIONS_DATA = [
 backend/_helpers/
 ├── db_init.py      ← Main initialization script
 ├── db_seed.py      ← Seed data definitions and logic
-└── archive/        ← Deprecated files (do not use)
-    ├── trivia.psql
-    ├── trivia_helpers.psql
-    └── README.md
+backend/docs/archive/  ← Deprecated SQL dumps (do not use)
+   ├── trivia.psql
+   └── trivia_helpers.psql
 ```
 
-**⚠️ IMPORTANT**: The `trivia.psql` files have been moved to `archive/` and are deprecated. Use the SQLAlchemy-based setup below.
+**⚠️ IMPORTANT**: The `trivia.psql` files have been moved to `docs/archive/` and are deprecated. Use the SQLAlchemy-based setup below.
 
 ### db_init.py
 
@@ -283,7 +282,7 @@ For manual API testing (e.g., with Postman/curl):
 
 ## ⚠️ Legacy Database Setup (Deprecated)
 
-The old `trivia.psql` PostgreSQL dump is **no longer used** and has been archived to `_helpers/archive/`. 
+The old `trivia.psql` PostgreSQL dump is **no longer used** and has been archived to `docs/archive/`.
 
 ### ❌ DO NOT USE: `psql trivia < trivia.psql`
 
@@ -359,7 +358,7 @@ If you get "database is locked" errors during testing:
 
 ## Database Schema Reference
 
-See [API_SPECIFICATION.md](../API_SPECIFICATION.md) for complete schema with column definitions and relationships.
+See [API_SPECIFICATION.md](./API_SPECIFICATION.md) for complete schema with column definitions and relationships.
 
 **Quick Reference**:
 

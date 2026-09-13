@@ -1,6 +1,6 @@
 # Running Backend Tests
 
-> ⚠️ **Python Version Required**: This project requires **Python 3.10** to match CI/CD environment. See [PYTHON_VERSION.md](../PYTHON_VERSION.md) for setup instructions.
+> ⚠️ **Python Version Required**: This project requires **Python 3.10** to match CI/CD environment. See [PYTHON_VERSION.md](../../PYTHON_VERSION.md) for setup instructions.
 
 This directory contains the backend Flask application with comprehensive test coverage. The test runner has been configured to suppress expected warnings (ResourceWarning, DeprecationWarning) for clean output.
 
