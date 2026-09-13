@@ -40,20 +40,12 @@ test: test-backend-coverage test-frontend
 
 test-backend:
 	@echo "Running backend tests..."
-ifeq ($(IS_WINDOWS),1)
-	cd backend && powershell -NoProfile -Command "& '.\run_tests.ps1' -mode no-cov"
-else
-	cd backend && PYTHONWARNINGS=ignore::ResourceWarning,ignore::DeprecationWarning python -m pytest _tests/ --tb=short -v
-endif
+	cd backend && "$(MAKE)" test
 	@echo "✓ Backend tests completed"
 
 test-backend-coverage:
 	@echo "Running backend tests with coverage..."
-ifeq ($(IS_WINDOWS),1)
-	cd backend && powershell -NoProfile -Command "& '.\run_tests.ps1'"
-else
-	cd backend && PYTHONWARNINGS=ignore::ResourceWarning,ignore::DeprecationWarning python -m pytest _tests/ --cov=. --cov-report=term-missing --cov-report=html --tb=short
-endif
+	cd backend && "$(MAKE)" test-cov
 
 test-cov: test-backend-coverage
 	@echo "✓ Coverage tests completed"
@@ -66,5 +58,13 @@ coverage-report:
 
 test-frontend:
 	@echo "Running frontend tests..."
+ifeq ($(IS_WINDOWS),1)
+	@powershell -NoProfile -Command "if (-not (Test-Path 'frontend/node_modules')) { Write-Host 'Installing frontend dependencies...'; Set-Location frontend; npm install; Set-Location .. }"
+else
+	@if [ ! -d frontend/node_modules ]; then \
+		echo "Installing frontend dependencies..."; \
+		cd frontend && npm install; \
+	fi
+endif
 	cd frontend && npm run test:ci
 	@echo "✓ Frontend tests completed"

@@ -34,3 +34,9 @@ frontend/.nyc_output/
 .tox/
 dist/
 build/
+
+# Local Coverage Reports
+backend/coverage_backend.json
+backend/coverage_output.txt
+frontend/coverage_report.txt
+frontend/full_coverage.txt

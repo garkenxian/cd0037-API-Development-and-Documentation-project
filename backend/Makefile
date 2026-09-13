@@ -1,4 +1,4 @@
-.PHONY: help run test test-cov test-all db-init db-seed db-refresh clean install lint format
+.PHONY: help run test test-cov test-all db-init db-seed db-refresh clean install lint format ensure-venv bootstrap
 
 VENV := venv
 ifeq ($(OS),Windows_NT)
@@ -25,23 +25,35 @@ help:
 	@echo "  format           - Format code with black"
 
 install:
-	$(PIP) install -r requirements.txt
+	$(PYTHON) -m pip install -r requirements.txt
+
+ensure-venv:
+ifeq ($(OS),Windows_NT)
+	powershell -NoProfile -Command "if (-not (Test-Path '.\\venv\\Scripts\\python.exe')) { if (Get-Command py -ErrorAction SilentlyContinue) { py -3 -m venv venv } else { python -m venv venv } }"
+else
+	@test -x "$(PYTHON)" || python3 -m venv $(VENV)
+endif
+
+bootstrap: ensure-venv install
 
 run:
+	"$(MAKE)" ensure-venv
 	$(PYTHON) -m flask run --reload
 
 test:
+	"$(MAKE)" bootstrap
 ifeq ($(OS),Windows_NT)
 	powershell -NoProfile -Command "& '.\run_tests.ps1' -mode no-cov"
 else
-	$(PYTHON) -m pytest _tests/ --tb=short -v
+	$(PYTHON) -W ignore::ResourceWarning -W ignore::DeprecationWarning -m pytest --tb=short -v
 endif
 
 test-cov:
+	"$(MAKE)" bootstrap
 ifeq ($(OS),Windows_NT)
 	powershell -NoProfile -Command "& '.\run_tests.ps1'"
 else
-	$(PYTHON) -m pytest _tests/ --cov=. --cov-report=term-missing --cov-report=html --tb=short
+	$(PYTHON) -W ignore::ResourceWarning -W ignore::DeprecationWarning -m pytest --cov=. --cov-report=term-missing --cov-report=html --tb=short
 endif
 
 test-all: test

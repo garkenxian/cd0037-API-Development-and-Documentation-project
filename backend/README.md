@@ -158,6 +158,22 @@ models/          ← ORM models
 
 The project uses **pytest** with comprehensive test coverage (94%+).
 
+### Reviewer Quick Command
+
+From the `backend` directory:
+
+```bash
+make test
+```
+
+If `make` is not available on your machine, use:
+
+```bash
+./run_tests.ps1   # Windows PowerShell
+# or
+./run_tests.cmd   # Windows CMD
+```
+
 ### Run Tests
 
 ```bash
